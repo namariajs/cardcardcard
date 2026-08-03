@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { computeStats } from '../lib/calc';
-import { fmt } from '../lib/format';
+import { fmt, formatLastUpdated } from '../lib/format';
+import { LAST_UPDATED_ISO } from '../lib/constants';
 import CegModal from './CegModal';
 
 export default function StatsBar({ onFilterByCeg }) {
@@ -25,6 +26,7 @@ export default function StatsBar({ onFilterByCeg }) {
           </>
         )}
         <div className="stat"><div className="stat-label">Joiners</div><div className="stat-value">{s.joinerCount}</div></div>
+        <div className="stat"><div className="stat-label">Última atualização</div><div className="stat-value" style={{ fontSize: 16 }}>{formatLastUpdated(LAST_UPDATED_ISO)}</div></div>
       </div>
       {showCegModal && (
         <CegModal

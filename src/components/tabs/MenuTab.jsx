@@ -1,17 +1,6 @@
-import { formatLastUpdated } from '../../lib/format';
-
-// Update this ISO timestamp (UTC) whenever the site's content/code changes — it's what
-// "Última atualização" shows, converted to Brasília time automatically.
-const LAST_UPDATED_ISO = '2026-08-03T12:00:00Z';
-
 export default function MenuTab() {
   return (
     <>
-      <div className="stat menu-update-box">
-        <div className="stat-label">Última atualização</div>
-        <div className="stat-value" style={{ fontSize: 16 }}>{formatLastUpdated(LAST_UPDATED_ISO)}</div>
-      </div>
-
       <div className="menu-section-title">Termos e Informações</div>
 
       <div className="menu-card" style={{ marginBottom: 16 }}>

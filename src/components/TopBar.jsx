@@ -13,17 +13,13 @@ export default function TopBar() {
 
   return (
     <div className="topbar">
-      <div className="brand">
-        <div className="brand-mark">📦</div>
-        <div className="brand-name">GO Desk</div>
-      </div>
       <div className="spacer" />
       <div className={`lock-chip${unlocked ? ' unlocked' : ''}`}>
         <span>{unlocked ? '🔓' : '🔒'}</span>
         {!unlocked && (
           <input
             type="text"
-            placeholder="PIN da GOM"
+            placeholder="PIN"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}

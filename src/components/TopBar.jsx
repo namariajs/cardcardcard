@@ -18,7 +18,7 @@ export default function TopBar() {
         <span>{unlocked ? '🔓' : '🔒'}</span>
         {!unlocked && (
           <input
-            type="text"
+            type="password"
             placeholder="PIN"
             value={pin}
             onChange={(e) => setPin(e.target.value)}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
 import { pendingClaims, claimFor, paymentFieldVisibleForStage } from '../../lib/calc';
-import { fmt, itemDisplayTitle, formatClaimDate } from '../../lib/format';
+import { fmt, itemDisplayTitle, formatClaimDate, hasVal } from '../../lib/format';
 import { PAYMENT_FIELDS } from '../../lib/constants';
 import { saveReceipt, readFileAsDataURL, resizeImageFile } from '../../lib/storage';
 import PayFieldRow from '../shared/PayFieldRow';
@@ -31,7 +31,7 @@ export default function PaymentsTab() {
   const mine = useMemo(() => (handle ? items.filter((it) => it.joiner.toLowerCase() === handle.toLowerCase()) : []), [items, handle]);
   const withPending = useMemo(() => mine.map((it) => ({
     it,
-    fields: PAYMENT_FIELDS.filter((f) => (it[f.pagField] === 'PENDENTE' || it[f.pagField] === 'ATRASADO') && paymentFieldVisibleForStage(f.key, it.statusCeg, it.tipo)),
+    fields: PAYMENT_FIELDS.filter((f) => (it[f.pagField] === 'PENDENTE' || it[f.pagField] === 'ATRASADO') && paymentFieldVisibleForStage(f.key, it.statusCeg, it.tipo) && hasVal(it[f.valField])),
   })).filter((x) => x.fields.length > 0), [mine]);
 
   const myShipments = useMemo(() => (handle ? shippingRequests.filter((r) => r.joiner.toLowerCase() === handle.toLowerCase() && r.status === 'PROCESSADO' && r.pagFrete !== 'PAGO') : []), [shippingRequests, handle]);

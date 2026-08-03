@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { interBoxFreteTotal, interBoxTaxaTotal } from '../../lib/calc';
 import { fmt, itemDisplayTitle } from '../../lib/format';
+import { cegStageIndex } from '../../lib/constants';
 import ConfirmModal from '../shared/ConfirmModal';
 
 function SectionHeader({ open, onClick, label }) {
@@ -14,7 +15,7 @@ function SectionHeader({ open, onClick, label }) {
 }
 
 export default function InterBoxCard({ box, onOpenItemDetail }) {
-  const { items, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox } = useApp();
+  const { items, setItems, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox } = useApp();
   const [sections, setSections] = useState({ items: true, step1: true, step2: true });
   const [confirmingDeleteBox, setConfirmingDeleteBox] = useState(false);
   const [confirmingRemoveItem, setConfirmingRemoveItem] = useState(null);
@@ -47,20 +48,56 @@ export default function InterBoxCard({ box, onOpenItemDetail }) {
 
   function toggle(section) { setSections((s) => ({ ...s, [section]: !s[section] })); }
 
+  function advanceIfEarlier(status, target) {
+    return cegStageIndex(status) < cegStageIndex(target) ? target : status;
+  }
+  function updateItemsById(ids, updater) {
+    if (!ids.length) return;
+    setItems((prev) => prev.map((it) => (ids.includes(it.id) ? updater(it) : it)));
+  }
+  function applyFreteInter(itemIds, value) {
+    updateItemsById(itemIds, (it) => ({ ...it, valorFreteInter: value, statusCeg: advanceIfEarlier(it.statusCeg, 'CAMINHO_BRASIL') }));
+  }
+  function resetFreteInter(itemId) {
+    updateItemsById([itemId], (it) => ({ ...it, valorFreteInter: 0, statusCeg: it.statusCeg === 'CAMINHO_BRASIL' ? 'NA_WAREHOUSE' : it.statusCeg }));
+  }
+  function applyTaxa(itemId, value) {
+    updateItemsById([itemId], (it) => ({ ...it, valorTaxa: value, statusCeg: advanceIfEarlier(it.statusCeg, 'TAXADA_RF') }));
+  }
+  function resetTaxa(itemId) {
+    updateItemsById([itemId], (it) => ({ ...it, valorTaxa: 0, statusCeg: it.statusCeg === 'TAXADA_RF' ? 'CAMINHO_BRASIL' : it.statusCeg }));
+  }
+
   function setItemCategory(itemId, catId) {
     updateInterBox(box.id, (b) => {
       const map = { ...(b.itemCategoryMap || {}) };
       if (catId) map[itemId] = catId; else delete map[itemId];
       return { itemCategoryMap: map };
     });
+    if (catId) {
+      const cat = (box.categories || []).find((c) => c.id === catId);
+      applyFreteInter([itemId], Number(cat?.value) || 0);
+    } else {
+      resetFreteInter(itemId);
+    }
   }
   function setItemTaxa(itemId, value) {
-    updateInterBox(box.id, (b) => ({ itemTaxaMap: { ...(b.itemTaxaMap || {}), [itemId]: parseFloat(String(value).replace(',', '.')) || 0 } }));
+    const parsed = parseFloat(String(value).replace(',', '.')) || 0;
+    updateInterBox(box.id, (b) => ({ itemTaxaMap: { ...(b.itemTaxaMap || {}), [itemId]: parsed } }));
+    if (parsed > 0) applyTaxa(itemId, parsed);
+    else resetTaxa(itemId);
   }
   function setCatField(catId, field, value) {
     updateInterBox(box.id, (b) => ({
       categories: (b.categories || []).map((c) => (c.id === catId ? { ...c, [field]: value } : c)),
     }));
+    if (field === 'value') {
+      const numeric = Number(value) || 0;
+      const affectedIds = Object.entries(box.itemCategoryMap || {})
+        .filter(([, cid]) => cid === catId)
+        .map(([itemId]) => itemId);
+      applyFreteInter(affectedIds, numeric);
+    }
   }
   function renameBox(name) {
     updateInterBox(box.id, { name: name.trim() || box.name });
@@ -193,7 +230,12 @@ export default function InterBoxCard({ box, onOpenItemDetail }) {
           message={`Tem certeza que deseja remover "${itemDisplayTitle(confirmingRemoveItem)}" desta caixa internacional? A categoria atribuída a ele também será perdida.`}
           confirmLabel="Remover"
           onCancel={() => setConfirmingRemoveItem(null)}
-          onConfirm={() => { removeItemFromInterBox(box.id, confirmingRemoveItem.id); setConfirmingRemoveItem(null); }}
+          onConfirm={() => {
+            removeItemFromInterBox(box.id, confirmingRemoveItem.id);
+            resetFreteInter(confirmingRemoveItem.id);
+            resetTaxa(confirmingRemoveItem.id);
+            setConfirmingRemoveItem(null);
+          }}
         />
       )}
       {confirmingRemoveCat && (

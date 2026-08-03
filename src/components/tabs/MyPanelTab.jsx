@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput, findRegistryBySocial } from '../../lib/joiners';
 import { computePanelStats, itemMatchesPanelStatusFilter, PANEL_STATUS_FILTER_LABELS } from '../../lib/calc';
-import { fmt, itemDisplayTitle, statusLabel, hasVal, pagClass, isInterItem } from '../../lib/format';
+import { fmt, itemDisplayTitle, statusLabel, isInterItem } from '../../lib/format';
 import { deletePhoto } from '../../lib/storage';
 import ItemCard from '../items/ItemCard';
 import ItemModal from '../items/ItemModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
+import PaymentFieldCell from '../shared/PaymentFieldCell';
 
 export default function MyPanelTab() {
   const { items, registry, shippingRequests, unlocked, removeItem } = useApp();
@@ -129,9 +130,9 @@ export default function MyPanelTab() {
                     <tr key={it.id}>
                       <td><b>{itemDisplayTitle(it)}</b>{unlocked && <><br /><span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{it.id}</span></>}</td>
                       <td>{it.ceg}</td>
-                      <td>{hasVal(it.valorItem) ? <>{fmt(it.valorItem)} <span className={`badge ${pagClass(it.pagItem)}`}>{it.pagItem}</span></> : '—'}</td>
-                      <td>{isInterItem(it) && hasVal(it.valorFreteInter) ? <>{fmt(it.valorFreteInter)} <span className={`badge ${pagClass(it.pagFreteInter)}`}>{it.pagFreteInter}</span></> : '—'}</td>
-                      <td>{isInterItem(it) && hasVal(it.valorTaxa) ? <>{fmt(it.valorTaxa)} <span className={`badge ${pagClass(it.pagTaxa)}`}>{it.pagTaxa}</span></> : '—'}</td>
+                      <td><PaymentFieldCell item={it} fieldKey="item" /></td>
+                      <td><PaymentFieldCell item={it} fieldKey="freteInter" visible={isInterItem(it)} /></td>
+                      <td><PaymentFieldCell item={it} fieldKey="taxa" visible={isInterItem(it)} /></td>
                       <td>{statusLabel('statusCeg', it.statusCeg)} / {statusLabel('statusEnvio', it.statusEnvio)}</td>
                       {unlocked && (
                         <td>

@@ -13,6 +13,17 @@ export function migrateItems(list) {
     if (it.valorTaxa === undefined) it.valorTaxa = 0;
     if (it.pagTaxa === undefined) it.pagTaxa = 'PENDENTE';
     if (it.tipo === undefined) it.tipo = 'CEG_INTER';
+    if (it.prazoItem === undefined) it.prazoItem = null;
+    if (it.prazoFreteInter === undefined) it.prazoFreteInter = null;
+    if (it.prazoTaxa === undefined) it.prazoTaxa = null;
+    if (it.pagItemPaidAt === undefined) it.pagItemPaidAt = null;
+    if (it.pagFreteInterPaidAt === undefined) it.pagFreteInterPaidAt = null;
+    if (it.pagTaxaPaidAt === undefined) it.pagTaxaPaidAt = null;
+    // ATRASADO is no longer a manually stored status for these 3 fields — normalize any
+    // legacy value back to PENDENTE; lateness is now derived from prazo/paidAt instead.
+    if (it.pagItem === 'ATRASADO') it.pagItem = 'PENDENTE';
+    if (it.pagFreteInter === 'ATRASADO') it.pagFreteInter = 'PENDENTE';
+    if (it.pagTaxa === 'ATRASADO') it.pagTaxa = 'PENDENTE';
   });
   return list;
 }

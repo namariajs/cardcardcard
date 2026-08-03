@@ -1,5 +1,6 @@
 import { useApp } from '../../context/AppContext';
-import { itemDisplayTitle, statusLabel, fmt, hasVal, pagClass, isInterItem } from '../../lib/format';
+import { itemDisplayTitle, statusLabel, isInterItem } from '../../lib/format';
+import PaymentFieldCell from '../shared/PaymentFieldCell';
 
 export default function ItemRow({ item, onEdit, onDelete }) {
   const { unlocked } = useApp();
@@ -11,9 +12,9 @@ export default function ItemRow({ item, onEdit, onDelete }) {
       </td>
       <td>{item.joiner}</td>
       <td>{item.ceg}</td>
-      <td>{hasVal(item.valorItem) ? <>{fmt(item.valorItem)} <span className={`badge ${pagClass(item.pagItem)}`}>{item.pagItem}</span></> : '—'}</td>
-      <td>{isInterItem(item) && hasVal(item.valorFreteInter) ? <>{fmt(item.valorFreteInter)} <span className={`badge ${pagClass(item.pagFreteInter)}`}>{item.pagFreteInter}</span></> : '—'}</td>
-      <td>{isInterItem(item) && hasVal(item.valorTaxa) ? <>{fmt(item.valorTaxa)} <span className={`badge ${pagClass(item.pagTaxa)}`}>{item.pagTaxa}</span></> : '—'}</td>
+      <td><PaymentFieldCell item={item} fieldKey="item" /></td>
+      <td><PaymentFieldCell item={item} fieldKey="freteInter" visible={isInterItem(item)} /></td>
+      <td><PaymentFieldCell item={item} fieldKey="taxa" visible={isInterItem(item)} /></td>
       <td>{statusLabel('statusCeg', item.statusCeg)} / {statusLabel('statusEnvio', item.statusEnvio)}</td>
       <td>
         {unlocked && (

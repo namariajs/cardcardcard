@@ -1,5 +1,33 @@
-import { cegStageIndex, REMINDER_DAYS } from './constants';
+import { cegStageIndex, REMINDER_DAYS, PAYMENT_FIELDS, PAYMENT_FIELDS_BY_KEY } from './constants';
 import { daysSince } from './format';
+
+const LATE_FEE_PER_DAY = 1;
+
+// deadline is a date-only ISO string ("2026-08-04"); paidAt (when set) is a full ISO
+// timestamp. Late days are frozen at the paid moment so the fee stops growing once paid.
+export function computeLateFee(deadline, paidAt) {
+  if (!deadline) return { lateDays: 0, fee: 0 };
+  const deadlineMs = new Date(deadline).getTime();
+  const referenceMs = paidAt ? new Date(paidAt).getTime() : Date.now();
+  const lateDays = Math.max(0, Math.floor((referenceMs - deadlineMs) / 86400000));
+  return { lateDays, fee: lateDays * LATE_FEE_PER_DAY };
+}
+
+export function effectivePagStatus(pagStatus, deadline, paidAt) {
+  if (pagStatus === 'PAGO') return 'PAGO';
+  return computeLateFee(deadline, paidAt).lateDays > 0 ? 'ATRASADO' : 'PENDENTE';
+}
+
+// Bundles the effective status/fee/total for one of PAYMENT_FIELDS (item/freteInter/taxa)
+// on a given item — the single source of truth every display site should read from.
+export function paymentFieldEffective(item, fieldDef) {
+  const base = Number(item[fieldDef.valField]) || 0;
+  const deadline = item[fieldDef.prazoField] || null;
+  const paidAt = item[fieldDef.paidAtField] || null;
+  const { lateDays, fee } = computeLateFee(deadline, paidAt);
+  const status = effectivePagStatus(item[fieldDef.pagField], deadline, paidAt);
+  return { status, lateDays, fee, total: base + fee };
+}
 
 // Some payment fields only make sense once an item's CEG status has reached a certain
 // stage (e.g. Taxa only applies once the item has actually been taxed by the Receita
@@ -21,11 +49,16 @@ export function computeStats(items) {
   const total = items.length;
   let pendingValue = 0, confirmedValue = 0, lateValue = 0, lateCount = 0;
   items.forEach((it) => {
-    [['valorItem', 'pagItem'], ['valorFreteInter', 'pagFreteInter'], ['valorTaxa', 'pagTaxa'], ['valorFreteNacional', 'pagFreteNacional']].forEach(([v, p]) => {
-      if (it[p] === 'PENDENTE') pendingValue += Number(it[v]) || 0;
-      else if (it[p] === 'PAGO') confirmedValue += Number(it[v]) || 0;
-      else if (it[p] === 'ATRASADO') { lateValue += Number(it[v]) || 0; lateCount++; }
+    PAYMENT_FIELDS.forEach((f) => {
+      const eff = paymentFieldEffective(it, f);
+      if (eff.status === 'PENDENTE') pendingValue += eff.total;
+      else if (eff.status === 'PAGO') confirmedValue += eff.total;
+      else if (eff.status === 'ATRASADO') { lateValue += eff.total; lateCount++; }
     });
+    // pagFreteNacional has no deadline/fee model — it stays a manually-picked status.
+    if (it.pagFreteNacional === 'PENDENTE') pendingValue += Number(it.valorFreteNacional) || 0;
+    else if (it.pagFreteNacional === 'PAGO') confirmedValue += Number(it.valorFreteNacional) || 0;
+    else if (it.pagFreteNacional === 'ATRASADO') { lateValue += Number(it.valorFreteNacional) || 0; lateCount++; }
   });
   const joinerCount = new Set(items.map((i) => i.joiner)).size;
   const cegCount = new Set(items.map((i) => i.ceg).filter((c) => c && c.trim())).size;
@@ -36,13 +69,16 @@ export function computePanelStats(list, joinerHandle, shippingRequests) {
   let pendingValue = 0, paidValue = 0, lateValue = 0, lateCount = 0;
   let freteInterPending = 0, taxaPending = 0, freteNacPending = 0, releasedForShipping = 0, shipped = 0, delivered = 0;
   list.forEach((it) => {
-    [['valorItem', 'pagItem'], ['valorFreteInter', 'pagFreteInter'], ['valorTaxa', 'pagTaxa']].forEach(([v, p]) => {
-      if (it[p] === 'PENDENTE') pendingValue += Number(it[v]) || 0;
-      else if (it[p] === 'PAGO') paidValue += Number(it[v]) || 0;
-      else if (it[p] === 'ATRASADO') { lateValue += Number(it[v]) || 0; lateCount++; }
+    PAYMENT_FIELDS.forEach((f) => {
+      const eff = paymentFieldEffective(it, f);
+      if (eff.status === 'PENDENTE') pendingValue += eff.total;
+      else if (eff.status === 'PAGO') paidValue += eff.total;
+      else if (eff.status === 'ATRASADO') { lateValue += eff.total; lateCount++; }
     });
-    if (it.pagFreteInter === 'PENDENTE' || it.pagFreteInter === 'ATRASADO') freteInterPending += Number(it.valorFreteInter) || 0;
-    if (it.pagTaxa === 'PENDENTE' || it.pagTaxa === 'ATRASADO') taxaPending += Number(it.valorTaxa) || 0;
+    const freteEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.freteInter);
+    if (freteEff.status === 'PENDENTE' || freteEff.status === 'ATRASADO') freteInterPending += freteEff.total;
+    const taxaEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.taxa);
+    if (taxaEff.status === 'PENDENTE' || taxaEff.status === 'ATRASADO') taxaPending += taxaEff.total;
     if (it.statusCeg === 'CHEGOU_GOM') releasedForShipping++;
     if (it.statusEnvio === 'ENVIADO') shipped++;
     if (it.statusEnvio === 'ENTREGUE') delivered++;
@@ -62,13 +98,15 @@ export function computePanelStats(list, joinerHandle, shippingRequests) {
 export function itemMatchesPanelStatusFilter(it, filter, joinerHandle, shippingRequests) {
   if (!filter) return true;
   if (filter === 'atrasado') {
-    return it.pagItem === 'ATRASADO' || it.pagFreteInter === 'ATRASADO' || it.pagTaxa === 'ATRASADO';
+    return PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === 'ATRASADO');
   }
   if (filter === 'freteInter') {
-    return it.pagFreteInter === 'PENDENTE' || it.pagFreteInter === 'ATRASADO';
+    const eff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.freteInter);
+    return eff.status === 'PENDENTE' || eff.status === 'ATRASADO';
   }
   if (filter === 'taxa') {
-    return it.pagTaxa === 'PENDENTE' || it.pagTaxa === 'ATRASADO';
+    const eff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.taxa);
+    return eff.status === 'PENDENTE' || eff.status === 'ATRASADO';
   }
   if (filter === 'freteNac') {
     const req = shippingRequests.find((r) => Array.isArray(r.itemIds) && r.itemIds.includes(it.id));

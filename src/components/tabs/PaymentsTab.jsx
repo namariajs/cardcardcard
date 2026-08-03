@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
-import { pendingClaims, claimFor, paymentFieldVisibleForStage } from '../../lib/calc';
+import { pendingClaims, claimFor, paymentFieldVisibleForStage, paymentFieldEffective } from '../../lib/calc';
 import { fmt, itemDisplayTitle, formatClaimDate, hasVal } from '../../lib/format';
 import { PAYMENT_FIELDS } from '../../lib/constants';
 import { saveReceipt, readFileAsDataURL, resizeImageFile } from '../../lib/storage';
@@ -57,7 +57,7 @@ export default function PaymentsTab() {
 
   const allFieldEntries = useMemo(() => withPending.flatMap(({ it, fields }) => fields.map((f) => ({ it, f, key: `${it.id}::${f.key}` }))), [withPending]);
   const selectedEntries = useMemo(() => allFieldEntries.filter((e) => selectedKeys.has(e.key)), [allFieldEntries, selectedKeys]);
-  const selectedTotal = useMemo(() => selectedEntries.reduce((sum, e) => sum + (Number(e.it[e.f.valField]) || 0), 0), [selectedEntries]);
+  const selectedTotal = useMemo(() => selectedEntries.reduce((sum, e) => sum + paymentFieldEffective(e.it, e.f).total, 0), [selectedEntries]);
   const batchModeActive = selectedEntries.length >= 2;
 
   function toggleFieldSelected(itemId, fieldKey) {
@@ -114,7 +114,7 @@ export default function PaymentsTab() {
           {groupedClaims.map((group) => {
             const first = group[0];
             const rows = group.map((c) => {
-              let title, label, amountNum;
+              let title, label, amountNum, feeNote;
               if (c.fieldKey === 'envioNacional') {
                 const req = shippingRequests.find((r) => r.id === c.itemId);
                 title = req ? `Envio combinado (${req.itemIds.length} ${req.itemIds.length === 1 ? 'item' : 'itens'})` : '(solicitação removida)';
@@ -125,16 +125,25 @@ export default function PaymentsTab() {
                 const fieldDef = PAYMENT_FIELDS.find((f) => f.key === c.fieldKey);
                 title = it ? itemDisplayTitle(it) : '(item removido)';
                 label = fieldDef ? fieldDef.label : '';
-                amountNum = it && fieldDef ? Number(it[fieldDef.valField]) || 0 : 0;
+                if (it && fieldDef) {
+                  const eff = paymentFieldEffective(it, fieldDef);
+                  amountNum = eff.total;
+                  if (eff.fee > 0) feeNote = `+ ${fmt(eff.fee)} de atraso (${eff.lateDays} ${eff.lateDays === 1 ? 'dia' : 'dias'})`;
+                } else {
+                  amountNum = 0;
+                }
               }
-              return { c, title, label, amountNum };
+              return { c, title, label, amountNum, feeNote };
             });
             const total = rows.reduce((sum, r) => sum + r.amountNum, 0);
             return (
               <div className="claim-row" key={first.batchId || first.id}>
                 <div className="claim-info">
                   {rows.map((r) => (
-                    <div key={r.c.id}><b>{r.title}</b> — {r.label} · {fmt(r.amountNum)}</div>
+                    <div key={r.c.id}>
+                      <b>{r.title}</b> — {r.label} · {fmt(r.amountNum)}
+                      {r.feeNote && <span className="late-fee-note" style={{ marginLeft: 6 }}>{r.feeNote}</span>}
+                    </div>
                   ))}
                   {rows.length > 1 && <div>Total combinado: <b>{fmt(total)}</b></div>}
                   <div>Joiner: <b>{first.joiner}</b> · Método: {first.method || '—'} · Avisado em {formatClaimDate(first.submittedAt)}</div>
@@ -177,12 +186,14 @@ export default function PaymentsTab() {
           {fields.map((f) => {
             const claim = claimFor(paymentClaims, it.id, f.key);
             const key = `${it.id}::${f.key}`;
+            const eff = paymentFieldEffective(it, f);
             return (
               <PayFieldRow
                 key={f.key}
                 label={f.label}
-                amount={fmt(Number(it[f.valField]) || 0)}
-                isLate={it[f.pagField] === 'ATRASADO'}
+                amount={fmt(eff.total)}
+                isLate={eff.status === 'ATRASADO'}
+                feeNote={eff.fee > 0 ? `+ ${fmt(eff.fee)} de atraso (${eff.lateDays} ${eff.lateDays === 1 ? 'dia' : 'dias'})` : null}
                 existingClaim={claim}
                 onSubmit={(data) => handleSubmitClaim(it.id, f.key, data)}
                 onCancelClaim={cancelPaymentClaim}

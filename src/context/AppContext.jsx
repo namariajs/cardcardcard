@@ -80,7 +80,8 @@ export function AppProvider({ children }) {
       } else {
         const fieldDef = PAYMENT_FIELDS.find((f) => f.key === claim.fieldKey);
         if (fieldDef) {
-          setItems((prev) => prev.map((it) => (it.id === claim.itemId ? { ...it, [fieldDef.pagField]: 'PAGO' } : it)));
+          const paidAt = new Date().toISOString();
+          setItems((prev) => prev.map((it) => (it.id === claim.itemId ? { ...it, [fieldDef.pagField]: 'PAGO', [fieldDef.paidAtField]: paidAt } : it)));
         }
       }
     });

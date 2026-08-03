@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function PayFieldRow({ label, amount, isLate, existingClaim, onSubmit, onCancelClaim, onViewReceipt, checked, onToggleCheck, hideForm }) {
+export default function PayFieldRow({ label, amount, isLate, feeNote, existingClaim, onSubmit, onCancelClaim, onViewReceipt, checked, onToggleCheck, hideForm }) {
   const [method, setMethod] = useState('PIX');
   const [note, setNote] = useState('');
   const [file, setFile] = useState(null);
@@ -10,7 +10,10 @@ export default function PayFieldRow({ label, amount, isLate, existingClaim, onSu
     return (
       <div className="pay-row">
         <div className="pay-row-label">{label}</div>
-        <div className="pay-row-amount">{amount}{isLate ? <> · <span style={{ color: '#8A5A16', fontWeight: 700 }}>Atrasado</span></> : ''}</div>
+        <div className="pay-row-amount">
+          {amount}{isLate ? <> · <span style={{ color: '#8A5A16', fontWeight: 700 }}>Atrasado</span></> : ''}
+          {feeNote && <span className="late-fee-note" style={{ marginLeft: 6 }}>{feeNote}</span>}
+        </div>
         <span className="pay-waiting">🕓 Aguardando verificação</span>
         {existingClaim.hasReceipt && (
           <button className="btn btn-outline" style={{ padding: '6px 10px', fontSize: 11.5 }} onClick={() => onViewReceipt(existingClaim)}>📎 Ver comprovante</button>
@@ -30,7 +33,10 @@ export default function PayFieldRow({ label, amount, isLate, existingClaim, onSu
     <div className="pay-row">
       {onToggleCheck && <input type="checkbox" checked={!!checked} onChange={onToggleCheck} />}
       <div className="pay-row-label">{label}</div>
-      <div className="pay-row-amount">{amount}{isLate ? <> · <span style={{ color: '#8A5A16', fontWeight: 700 }}>Atrasado</span></> : ''}</div>
+      <div className="pay-row-amount">
+        {amount}{isLate ? <> · <span style={{ color: '#8A5A16', fontWeight: 700 }}>Atrasado</span></> : ''}
+        {feeNote && <span className="late-fee-note" style={{ marginLeft: 6 }}>{feeNote}</span>}
+      </div>
       {!hideForm && (
         <div className="pay-form">
           <select value={method} onChange={(e) => setMethod(e.target.value)}>

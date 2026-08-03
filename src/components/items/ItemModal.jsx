@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
 import { genId } from '../../lib/format';
-import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS } from '../../lib/constants';
+import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS, PAYMENT_FIELDS } from '../../lib/constants';
 import { resizeImageFile, loadPhoto } from '../../lib/storage';
 import Modal from '../shared/Modal';
 import AutocompleteInput from '../shared/AutocompleteInput';
@@ -11,6 +11,8 @@ const BLANK = {
   joiner: '', itemName: '', ceg: '', loja: '',
   valorItem: 0, valorFreteInter: 0, valorTaxa: 0, valorFreteNacional: 0,
   pagItem: 'PENDENTE', pagFreteInter: 'PENDENTE', pagTaxa: 'PENDENTE', pagFreteNacional: 'PENDENTE',
+  prazoItem: null, prazoFreteInter: null, prazoTaxa: null,
+  pagItemPaidAt: null, pagFreteInterPaidAt: null, pagTaxaPaidAt: null,
   statusCeg: '-', statusEnvio: '-', rastreio: '-', notes: '', caixa: '-', hasPhoto: false,
   category: '-', grupo: '-', membro: '-', tipo: 'CEG_INTER',
 };
@@ -93,8 +95,22 @@ export default function ItemModal({ itemId, onClose }) {
       valorTaxa: parseFloat(String(form.valorTaxa).replace(',', '.')) || 0,
       rastreio: (form.rastreio || '').trim() || '-',
       caixa: (form.caixa || '').trim() || '-',
+      prazoItem: form.prazoItem || null,
+      prazoFreteInter: form.prazoFreteInter || null,
+      prazoTaxa: form.prazoTaxa || null,
       hasPhoto: existing ? !!existing.hasPhoto : false,
     };
+
+    // paidAt tracks the moment each field actually became PAGO, so the late fee freezes
+    // there instead of continuing to grow — stamp it on the PENDENTE→PAGO transition and
+    // clear it if a field is reverted back to PENDENTE.
+    PAYMENT_FIELDS.forEach((f) => {
+      if (newItem[f.pagField] === 'PAGO') {
+        if (!existing || existing[f.pagField] !== 'PAGO') newItem[f.paidAtField] = new Date().toISOString();
+      } else {
+        newItem[f.paidAtField] = null;
+      }
+    });
 
     if (photoDraft.dataUrl) {
       await setItemPhoto(newItem.id, photoDraft.dataUrl);
@@ -190,6 +206,10 @@ export default function ItemModal({ itemId, onClose }) {
             {PAG_OPTIONS.map((o) => <option key={o}>{o}</option>)}
           </select>
         </div>
+        <div className="field">
+          <label>Prazo</label>
+          <input type="date" value={form.prazoItem || ''} onChange={(e) => set('prazoItem', e.target.value || null)} />
+        </div>
 
         {showInterFields && (
           <>
@@ -204,6 +224,10 @@ export default function ItemModal({ itemId, onClose }) {
               </select>
             </div>
             <div className="field">
+              <label>Prazo</label>
+              <input type="date" value={form.prazoFreteInter || ''} onChange={(e) => set('prazoFreteInter', e.target.value || null)} />
+            </div>
+            <div className="field">
               <label>Taxa (R$)</label>
               <input value={form.valorTaxa} onChange={(e) => set('valorTaxa', e.target.value)} />
             </div>
@@ -212,6 +236,10 @@ export default function ItemModal({ itemId, onClose }) {
               <select value={form.pagTaxa} onChange={(e) => set('pagTaxa', e.target.value)}>
                 {PAG_OPTIONS.map((o) => <option key={o}>{o}</option>)}
               </select>
+            </div>
+            <div className="field">
+              <label>Prazo</label>
+              <input type="date" value={form.prazoTaxa || ''} onChange={(e) => set('prazoTaxa', e.target.value || null)} />
             </div>
           </>
         )}

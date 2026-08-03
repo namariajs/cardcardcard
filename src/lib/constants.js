@@ -47,7 +47,9 @@ export const TIPO_LABELS = {
   VENDA: 'Venda',
 };
 
-export const PAG_OPTIONS = ['PENDENTE', 'PAGO', 'ATRASADO'];
+// 'ATRASADO' isn't manually selectable for pagItem/pagFreteInter/pagTaxa anymore — it's
+// derived from prazo*/paidAt via effectivePagStatus() in calc.js instead.
+export const PAG_OPTIONS = ['PENDENTE', 'PAGO'];
 
 // Order used to decide whether an item has "reached" a CEG stage yet (Frete Nacional
 // eligibility, etc). Index in this array = how far along the pipeline the item is.
@@ -69,12 +71,13 @@ export function cegStageIndex(status) {
   return idx === -1 ? 0 : idx;
 }
 
-// Maps a payment "slot" on an item to its value/status fields + a friendly label
+// Maps a payment "slot" on an item to its value/status/deadline/paid-at fields + a friendly label
 export const PAYMENT_FIELDS = [
-  { key: 'item', pagField: 'pagItem', valField: 'valorItem', label: 'Item' },
-  { key: 'freteInter', pagField: 'pagFreteInter', valField: 'valorFreteInter', label: 'Frete Internacional' },
-  { key: 'taxa', pagField: 'pagTaxa', valField: 'valorTaxa', label: 'Taxa' },
+  { key: 'item', pagField: 'pagItem', valField: 'valorItem', label: 'Item', prazoField: 'prazoItem', paidAtField: 'pagItemPaidAt' },
+  { key: 'freteInter', pagField: 'pagFreteInter', valField: 'valorFreteInter', label: 'Frete Internacional', prazoField: 'prazoFreteInter', paidAtField: 'pagFreteInterPaidAt' },
+  { key: 'taxa', pagField: 'pagTaxa', valField: 'valorTaxa', label: 'Taxa', prazoField: 'prazoTaxa', paidAtField: 'pagTaxaPaidAt' },
 ];
+export const PAYMENT_FIELDS_BY_KEY = Object.fromEntries(PAYMENT_FIELDS.map((f) => [f.key, f]));
 
 export const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 

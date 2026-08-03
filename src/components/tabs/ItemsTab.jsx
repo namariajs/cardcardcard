@@ -6,6 +6,8 @@ import ItemModal from '../items/ItemModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import { deletePhoto } from '../../lib/storage';
+import { paymentFieldEffective } from '../../lib/calc';
+import { PAYMENT_FIELDS } from '../../lib/constants';
 
 export default function ItemsTab({ externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
   const { items, unlocked, removeItem } = useApp();
@@ -34,7 +36,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
       const matchQ = !q || [it.joiner, it.itemName, it.ceg, it.id, it.loja, it.caixa, it.grupo, it.membro].join(' ').toLowerCase().includes(q);
       const matchJ = !joinerFilter || it.joiner === joinerFilter;
       const matchC = !caixaFilter || it.caixa === caixaFilter;
-      const matchS = !statusFilter || it.pagItem === statusFilter || it.pagFreteInter === statusFilter || it.pagTaxa === statusFilter;
+      const matchS = !statusFilter || PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === statusFilter);
       return matchQ && matchJ && matchC && matchS;
     });
   }, [items, query, joinerFilter, caixaFilter, statusFilter]);

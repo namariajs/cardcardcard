@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { STORAGE_KEYS, GOM_PIN, SEED_ITEMS, PAYMENT_FIELDS } from '../lib/constants';
 import { migrateItems, migrateShippingRequests, migrateInterBoxes } from '../lib/migrations';
-import { genId, genPayId, genShipId, genInterBoxId, genInterCatId } from '../lib/format';
+import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId } from '../lib/format';
 import { savePhoto, deletePhoto, deleteReceipt } from '../lib/storage';
 
 const AppContext = createContext(null);
@@ -45,27 +45,58 @@ export function AppProvider({ children }) {
     const claim = {
       id: id || genPayId(), itemId, fieldKey, joiner, method, note,
       submittedAt: new Date().toISOString(), status: 'PENDENTE_VERIFICACAO', hasReceipt: !!hasReceipt,
+      batchId: null,
     };
     setPaymentClaims((prev) => [...prev, claim]);
     return claim;
   }
+  // One batchId shared across one claim per {itemId, fieldKey} pair, so a joiner can pay
+  // several fields at once with a single receipt/method/note while GOM still confirms
+  // (or the item-status logic still updates) one field at a time under the hood.
+  function submitBatchPaymentClaim({ batchId, entries, joiner, method, note, hasReceipt }) {
+    const id = batchId || genBatchId();
+    const submittedAt = new Date().toISOString();
+    const claims = entries.map(({ itemId, fieldKey }) => ({
+      id: genPayId(), itemId, fieldKey, joiner, method, note,
+      submittedAt, status: 'PENDENTE_VERIFICACAO', hasReceipt: !!hasReceipt, batchId: id,
+    }));
+    setPaymentClaims((prev) => [...prev, ...claims]);
+    return { batchId: id, claims };
+  }
   function cancelPaymentClaim(claimId) {
     const claim = paymentClaims.find((c) => c.id === claimId);
-    setPaymentClaims((prev) => prev.filter((c) => c.id !== claimId));
-    if (claim?.hasReceipt) deleteReceipt(claimId);
+    const remaining = paymentClaims.filter((c) => c.id !== claimId);
+    setPaymentClaims(remaining);
+    if (claim?.hasReceipt) {
+      const receiptKey = claim.batchId || claim.id;
+      const stillReferenced = remaining.some((c) => (c.batchId || c.id) === receiptKey);
+      if (!stillReferenced) deleteReceipt(receiptKey);
+    }
+  }
+  function applyConfirmedClaims(claimsToApply) {
+    claimsToApply.forEach((claim) => {
+      if (claim.fieldKey === 'envioNacional') {
+        setShippingRequests((prev) => prev.map((r) => (r.id === claim.itemId ? { ...r, pagFrete: 'PAGO' } : r)));
+      } else {
+        const fieldDef = PAYMENT_FIELDS.find((f) => f.key === claim.fieldKey);
+        if (fieldDef) {
+          setItems((prev) => prev.map((it) => (it.id === claim.itemId ? { ...it, [fieldDef.pagField]: 'PAGO' } : it)));
+        }
+      }
+    });
   }
   function confirmPaymentClaim(claimId) {
     const claim = paymentClaims.find((c) => c.id === claimId);
     if (!claim) return;
-    if (claim.fieldKey === 'envioNacional') {
-      setShippingRequests((prev) => prev.map((r) => (r.id === claim.itemId ? { ...r, pagFrete: 'PAGO' } : r)));
-    } else {
-      const fieldDef = PAYMENT_FIELDS.find((f) => f.key === claim.fieldKey);
-      if (fieldDef) {
-        setItems((prev) => prev.map((it) => (it.id === claim.itemId ? { ...it, [fieldDef.pagField]: 'PAGO' } : it)));
-      }
-    }
+    applyConfirmedClaims([claim]);
     setPaymentClaims((prev) => prev.map((c) => (c.id === claimId ? { ...c, status: 'CONFIRMADO', confirmedAt: new Date().toISOString() } : c)));
+  }
+  function confirmBatchPaymentClaim(batchId) {
+    const claimsInBatch = paymentClaims.filter((c) => c.batchId === batchId && c.status === 'PENDENTE_VERIFICACAO');
+    if (claimsInBatch.length === 0) return;
+    applyConfirmedClaims(claimsInBatch);
+    const confirmedAt = new Date().toISOString();
+    setPaymentClaims((prev) => prev.map((c) => (c.batchId === batchId ? { ...c, status: 'CONFIRMADO', confirmedAt } : c)));
   }
 
   // ---------- shipping requests (Frete Nacional) ----------
@@ -131,7 +162,7 @@ export function AppProvider({ children }) {
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,
     registry, setRegistry, upsertRegistryEntry, removeRegistryEntry,
-    paymentClaims, setPaymentClaims, submitPaymentClaim, cancelPaymentClaim, confirmPaymentClaim,
+    paymentClaims, setPaymentClaims, submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim,
     shippingRequests, setShippingRequests, createShippingRequest, updateShippingRequest, cancelShippingRequest,
     interBoxes, setInterBoxes, createInterBox, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox,
     setItemPhoto, clearItemPhoto,

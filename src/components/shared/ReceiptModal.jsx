@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { loadReceipt } from '../../lib/storage';
 import Modal from './Modal';
 
-export default function ReceiptModal({ claimId, onClose }) {
+export default function ReceiptModal({ claim, onClose }) {
   const [dataUrl, setDataUrl] = useState(undefined); // undefined = loading, null = not found
+  const receiptKey = claim.batchId || claim.id;
 
   useEffect(() => {
     let cancelled = false;
-    loadReceipt(claimId).then((url) => { if (!cancelled) setDataUrl(url); });
+    loadReceipt(receiptKey).then((url) => { if (!cancelled) setDataUrl(url); });
     return () => { cancelled = true; };
-  }, [claimId]);
+  }, [receiptKey]);
 
   return (
     <Modal onClose={onClose} maxWidth={520}>

@@ -5,6 +5,7 @@ export const fmt = (n) => 'R$ ' + (Number(n) || 0).toFixed(2).replace('.', ',');
 export const genId = () => 'ITM-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genRegId = () => 'JNR-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genPayId = () => 'PAY-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+export const genBatchId = () => 'BATCH-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genShipId = () => 'SHIP-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genInterBoxId = () => 'IBOX-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genInterCatId = () => 'ICAT-' + Math.random().toString(36).slice(2, 6).toUpperCase();

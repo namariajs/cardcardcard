@@ -5,6 +5,7 @@ import { genId } from '../../lib/format';
 import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS } from '../../lib/constants';
 import { resizeImageFile, loadPhoto } from '../../lib/storage';
 import Modal from '../shared/Modal';
+import AutocompleteInput from '../shared/AutocompleteInput';
 
 const BLANK = {
   joiner: '', itemName: '', ceg: '', loja: '',
@@ -36,6 +37,7 @@ export default function ItemModal({ itemId, onClose }) {
     return { text: '⚠ Este @ ainda não está no Cadastro de Joiners', color: 'var(--pink-deep)' };
   }, [form.joiner, registry]);
 
+  const joinerOptions = useMemo(() => registry.map((r) => ({ value: r.social, label: `${r.apelido}${r.phone ? ' — ' + r.phone : ''}` })), [registry]);
   const grupoOptions = useMemo(() => [...new Set(items.map((i) => i.grupo).filter((g) => g && g !== '-'))].sort(), [items]);
   const membroOptions = useMemo(() => [...new Set(items.map((i) => i.membro).filter((m) => m && m !== '-'))].sort(), [items]);
   const cegOptions = useMemo(() => [...new Set(items.map((i) => i.ceg).filter((c) => c && c.trim()))].sort(), [items]);
@@ -130,11 +132,8 @@ export default function ItemModal({ itemId, onClose }) {
 
         <div className="field">
           <label>Joiner (@ ou telefone)</label>
-          <input list="joinerDatalist" autoComplete="off" placeholder="@usuario ou (11) 91234-5678"
-            value={form.joiner} onChange={(e) => set('joiner', e.target.value)} onBlur={handleJoinerBlur} />
-          <datalist id="joinerDatalist">
-            {registry.map((r) => <option key={r.id} value={r.social}>{r.apelido}{r.phone ? ' — ' + r.phone : ''}</option>)}
-          </datalist>
+          <AutocompleteInput placeholder="@usuario ou (11) 91234-5678"
+            value={form.joiner} onChange={(v) => set('joiner', v)} onBlur={handleJoinerBlur} options={joinerOptions} />
           {joinerHint && <div style={{ fontSize: 11, marginTop: 4, color: joinerHint.color }}>{joinerHint.text}</div>}
         </div>
 
@@ -152,22 +151,19 @@ export default function ItemModal({ itemId, onClose }) {
 
         <div className="field">
           <label>Grupo</label>
-          <input list="grupoDatalist" autoComplete="off" placeholder="Ex: ZB1"
-            value={form.grupo === '-' ? '' : form.grupo} onChange={(e) => set('grupo', e.target.value)} />
-          <datalist id="grupoDatalist">{grupoOptions.map((g) => <option key={g} value={g} />)}</datalist>
+          <AutocompleteInput placeholder="Ex: ZB1"
+            value={form.grupo === '-' ? '' : form.grupo} onChange={(v) => set('grupo', v)} options={grupoOptions} />
         </div>
 
         <div className="field">
           <label>Membro</label>
-          <input list="membroDatalist" autoComplete="off" placeholder="Ex: Han"
-            value={form.membro === '-' ? '' : form.membro} onChange={(e) => set('membro', e.target.value)} />
-          <datalist id="membroDatalist">{membroOptions.map((m) => <option key={m} value={m} />)}</datalist>
+          <AutocompleteInput placeholder="Ex: Han"
+            value={form.membro === '-' ? '' : form.membro} onChange={(v) => set('membro', v)} options={membroOptions} />
         </div>
 
         <div className="field">
           <label>CEG</label>
-          <input list="cegDatalist" autoComplete="off" placeholder="CEG..." value={form.ceg} onChange={(e) => set('ceg', e.target.value)} />
-          <datalist id="cegDatalist">{cegOptions.map((c) => <option key={c} value={c} />)}</datalist>
+          <AutocompleteInput placeholder="CEG..." value={form.ceg} onChange={(v) => set('ceg', v)} options={cegOptions} />
         </div>
 
         <div className="field">
@@ -235,9 +231,8 @@ export default function ItemModal({ itemId, onClose }) {
 
         <div className="field full">
           <label>Caixa (lote de envio)</label>
-          <input list="caixaDatalist" autoComplete="off" placeholder="Ex: Caixa 3"
-            value={form.caixa === '-' ? '' : form.caixa} onChange={(e) => set('caixa', e.target.value)} />
-          <datalist id="caixaDatalist">{caixaOptions.map((c) => <option key={c} value={c} />)}</datalist>
+          <AutocompleteInput placeholder="Ex: Caixa 3"
+            value={form.caixa === '-' ? '' : form.caixa} onChange={(v) => set('caixa', v)} options={caixaOptions} />
           <div className="caixa-hint">{showCaixaHint ? '💡 Este item está a caminho do Brasil — associe a uma caixa para acompanhar o lote.' : ''}</div>
         </div>
 

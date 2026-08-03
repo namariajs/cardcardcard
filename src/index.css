@@ -425,6 +425,15 @@
   .photo-upload-actions{ display:flex; gap:8px; flex-wrap:wrap; }
   .caixa-hint{ font-size:11px; margin-top:4px; color:var(--pink-deep); }
 
+  .autocomplete-wrap{ position:relative; }
+  .autocomplete-dropdown{
+    position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:20;
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow-sm); max-height:220px; overflow-y:auto; padding:6px;
+  }
+  .autocomplete-option{ padding:8px 10px; border-radius:10px; font-size:13.5px; color:var(--ink); cursor:pointer; }
+  .autocomplete-option:hover{ background:var(--pink-light); }
+
   .empty{
     text-align:center; padding:56px 20px; color:var(--ink-soft);
     background:var(--card); border:1px dashed var(--border); border-radius:18px;

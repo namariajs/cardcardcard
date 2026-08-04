@@ -5,7 +5,7 @@ import { fmt, formatLastUpdated } from '../lib/format';
 import { LAST_UPDATED_ISO } from '../lib/constants';
 import CegModal from './CegModal';
 
-export default function StatsBar({ onFilterByCeg }) {
+export default function StatsBar({ onFilterByCeg, onGoToItems }) {
   const { items, unlocked } = useApp();
   const [showCegModal, setShowCegModal] = useState(false);
   const s = computeStats(items);
@@ -17,7 +17,10 @@ export default function StatsBar({ onFilterByCeg }) {
           <div className="stat-label">CEGs em Andamento</div>
           <div className="stat-value">{s.cegCount}</div>
         </div>
-        <div className="stat"><div className="stat-label">Total de Itens</div><div className="stat-value">{s.total}</div></div>
+        <div className="stat stat-clickable" onClick={() => onGoToItems?.()}>
+          <div className="stat-label">Total de Itens</div>
+          <div className="stat-value">{s.total}</div>
+        </div>
         {unlocked && (
           <>
             <div className="stat"><div className="stat-label">Valor Pendente</div><div className="stat-value">{fmt(s.pendingValue)}</div></div>

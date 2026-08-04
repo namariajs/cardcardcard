@@ -30,6 +30,9 @@ export default function App() {
     setActiveTab('items');
     setItemsQuery(ceg);
   }
+  function goToItems() {
+    setActiveTab('items');
+  }
   function goToItemsWithJoiner(joiner) {
     setActiveTab('items');
     setItemsJoinerFilter(joiner);
@@ -40,7 +43,7 @@ export default function App() {
       <TopBar />
       <Hero />
       <Tabs activeTab={activeTab} onChange={setActiveTab} />
-      <StatsBar onFilterByCeg={goToItemsWithCeg} />
+      <StatsBar onFilterByCeg={goToItemsWithCeg} onGoToItems={goToItems} />
 
       <div className="main">
         {activeTab === 'menu' && <MenuTab />}

@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
 import { STORAGE_KEYS, SEED_ITEMS, PAYMENT_FIELDS } from '../lib/constants';
 import { migrateItems, migrateShippingRequests, migrateInterBoxes } from '../lib/migrations';
-import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId } from '../lib/format';
+import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId, genRegId } from '../lib/format';
+import { findRegistryConflict } from '../lib/joiners';
 import { savePhoto, deletePhoto, deleteReceipt } from '../lib/storage';
 import { supabase } from '../lib/supabaseClient';
 
@@ -15,6 +16,7 @@ export function AppProvider({ children }) {
   const [shippingRequests, setShippingRequests] = usePersistedState(STORAGE_KEYS.shippingRequests, [], migrateShippingRequests);
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
   const [memberRosters, setMemberRosters] = usePersistedState(STORAGE_KEYS.memberRosters, []);
+  const [itemOrders, setItemOrders] = usePersistedState(STORAGE_KEYS.itemOrders, []);
 
   const [unlocked, setUnlocked] = useState(false);
 
@@ -66,6 +68,41 @@ export function AppProvider({ children }) {
   }
   function removeMemberRoster(id) {
     setMemberRosters((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  // ---------- item orders (joiners requesting an unclaimed item) ----------
+  function submitItemOrder(order) {
+    setItemOrders((prev) => [...prev, order]);
+  }
+  // Approving turns pendingCadastro into a real Cadastro entry only now (running the same
+  // duplicate check RegistryModal uses, so a match added after the request was submitted
+  // attaches to that entry instead of creating a second one), then claims the item.
+  function approveItemOrder(orderId) {
+    const order = itemOrders.find((o) => o.id === orderId);
+    if (!order || order.status !== 'PENDENTE') return;
+    const item = items.find((i) => i.id === order.itemId);
+    // Item already claimed (e.g. another order for it got approved first) or deleted —
+    // this request can no longer be fulfilled, so it's denied rather than silently vanishing.
+    if (!item || !item.unclaimed) { setItemOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'NEGADO' } : o))); return; }
+
+    let resolvedHandle = order.resolvedJoiner || null;
+    if (!resolvedHandle && order.pendingCadastro) {
+      const pc = order.pendingCadastro;
+      const conflict = findRegistryConflict(registry, pc);
+      if (conflict) {
+        resolvedHandle = conflict.social;
+      } else {
+        resolvedHandle = pc.social;
+        upsertRegistryEntry({ id: genRegId(), apelido: pc.apelido, nomeCompleto: pc.nomeCompleto || '', phone: pc.phone || '', social: pc.social });
+      }
+    }
+    if (resolvedHandle) {
+      setItems((prev) => prev.map((it) => (it.id === order.itemId ? { ...it, joiner: resolvedHandle, unclaimed: false } : it)));
+    }
+    setItemOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'APROVADO', resolvedJoiner: resolvedHandle } : o)));
+  }
+  function denyItemOrder(orderId) {
+    setItemOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: 'NEGADO' } : o)));
   }
 
   // ---------- payment claims ----------
@@ -203,6 +240,7 @@ export function AppProvider({ children }) {
     items, setItems, upsertItem, removeItem,
     registry, setRegistry, upsertRegistryEntry, removeRegistryEntry,
     memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
+    itemOrders, setItemOrders, submitItemOrder, approveItemOrder, denyItemOrder,
     paymentClaims, setPaymentClaims, submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim,
     shippingRequests, setShippingRequests, createShippingRequest, updateShippingRequest, cancelShippingRequest,
     interBoxes, setInterBoxes, createInterBox, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox,
@@ -210,7 +248,7 @@ export function AppProvider({ children }) {
     unlocked, tryUnlock, lock,
     genId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, registry, memberRosters, paymentClaims, shippingRequests, interBoxes, unlocked]);
+  }), [items, registry, memberRosters, itemOrders, paymentClaims, shippingRequests, interBoxes, unlocked]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

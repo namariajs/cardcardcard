@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   shippingRequests: 'gom-shipping-requests',
   interBoxes: 'gom-inter-boxes',
   memberRosters: 'gom-member-rosters',
+  itemOrders: 'gom-item-orders',
 };
 
 export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter'];

@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { findRegistryBySocial } from '../../lib/joiners';
 import { itemDisplayTitle, statusLabel } from '../../lib/format';
 import PhotoThumb from '../shared/PhotoThumb';
 import ValueBoxes from '../shared/ValueBoxes';
+import OrderItemModal from './OrderItemModal';
 
 export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDuplicate }) {
-  const { registry, unlocked } = useApp();
+  const { registry, unlocked, itemOrders } = useApp();
+  const [ordering, setOrdering] = useState(false);
   const regMatch = showJoinerBadge ? findRegistryBySocial(registry, item.joiner) : null;
+  const hasPendingOrder = item.unclaimed && itemOrders.some((o) => o.itemId === item.id && o.status === 'PENDENTE');
 
   return (
     <div className="item-card">
@@ -41,6 +45,11 @@ export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDu
           {item.caixa && item.caixa !== '-' && <span className="badge neutral">📦 {item.caixa}</span>}
         </div>
         <ValueBoxes item={item} />
+        {showJoinerBadge && item.unclaimed && (
+          hasPendingOrder
+            ? <div className="meta-row" style={{ color: '#2F5C40' }}>🕓 Pedido enviado — aguardando aprovação</div>
+            : <button className="btn btn-primary" style={{ marginTop: 8, width: '100%' }} onClick={() => setOrdering(true)}>📩 Pedir este item</button>
+        )}
         {unlocked && (
           <div className="card-actions">
             <button className="btn btn-ghost" onClick={() => onEdit(item.id)}>✎ Editar</button>
@@ -49,6 +58,7 @@ export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDu
           </div>
         )}
       </div>
+      {ordering && <OrderItemModal item={item} onClose={() => setOrdering(false)} />}
     </div>
   );
 }

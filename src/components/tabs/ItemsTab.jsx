@@ -7,8 +7,11 @@ import SetModal from '../items/SetModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import StyledSelect from '../shared/StyledSelect';
+import PhotoThumb from '../shared/PhotoThumb';
 import { deletePhoto } from '../../lib/storage';
-import { paymentFieldEffective } from '../../lib/calc';
+import { paymentFieldEffective, pendingItemOrders } from '../../lib/calc';
+import { findRegistryBySocial } from '../../lib/joiners';
+import { itemDisplayTitle, formatClaimDate } from '../../lib/format';
 import { PAYMENT_FIELDS } from '../../lib/constants';
 
 // Sentinel joinerFilter value meaning "unclaimed items only" — distinct from any real
@@ -16,11 +19,15 @@ import { PAYMENT_FIELDS } from '../../lib/constants';
 const UNCLAIMED_FILTER = '__unclaimed__';
 
 export default function ItemsTab({ externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
-  const { items, unlocked, removeItem } = useApp();
+  const { items, unlocked, removeItem, registry, itemOrders, approveItemOrder, denyItemOrder } = useApp();
   const [query, setQuery] = useState('');
   const [joinerFilter, setJoinerFilter] = useState('');
   const [caixaFilter, setCaixaFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [grupoFilter, setGrupoFilter] = useState('');
+  const [membroFilter, setMembroFilter] = useState('');
+  const [cegFilter, setCegFilter] = useState('');
+  const [itemNameFilter, setItemNameFilter] = useState('');
   const [viewMode, setViewMode] = useState('cards');
   const [editingId, setEditingId] = useState(undefined); // undefined = closed, null = new item, string = edit
   const [deletingId, setDeletingId] = useState(null);
@@ -37,6 +44,10 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
 
   const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].filter(Boolean).sort(), [items]);
   const caixas = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
+  const grupos = useMemo(() => [...new Set(items.map((i) => i.grupo).filter((g) => g && g !== '-'))].sort(), [items]);
+  const membros = useMemo(() => [...new Set(items.map((i) => i.membro).filter((m) => m && m !== '-'))].sort(), [items]);
+  const cegs = useMemo(() => [...new Set(items.map((i) => i.ceg).filter((c) => c && c.trim()))].sort(), [items]);
+  const itemNames = useMemo(() => [...new Set(items.map((i) => i.itemName).filter(Boolean))].sort(), [items]);
 
   const joinerOptions = useMemo(() => [
     { value: '', label: 'Todos os joiners' },
@@ -53,6 +64,22 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
     { value: 'PAGO', label: 'Pagos' },
     { value: 'ATRASADO', label: 'Atrasados' },
   ];
+  const grupoOptions = useMemo(() => [
+    { value: '', label: 'Todos os grupos' },
+    ...grupos.map((g) => ({ value: g, label: g })),
+  ], [grupos]);
+  const membroOptions = useMemo(() => [
+    { value: '', label: 'Todos os membros' },
+    ...membros.map((m) => ({ value: m, label: m })),
+  ], [membros]);
+  const cegOptions = useMemo(() => [
+    { value: '', label: 'Todos os CEGs' },
+    ...cegs.map((c) => ({ value: c, label: c })),
+  ], [cegs]);
+  const itemNameOptions = useMemo(() => [
+    { value: '', label: 'Todos os sets/itens' },
+    ...itemNames.map((n) => ({ value: n, label: n })),
+  ], [itemNames]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -61,9 +88,18 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
       const matchJ = !joinerFilter || (joinerFilter === UNCLAIMED_FILTER ? it.unclaimed : it.joiner === joinerFilter);
       const matchC = !caixaFilter || it.caixa === caixaFilter;
       const matchS = !statusFilter || PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === statusFilter);
-      return matchQ && matchJ && matchC && matchS;
+      const matchG = !grupoFilter || it.grupo === grupoFilter;
+      const matchM = !membroFilter || it.membro === membroFilter;
+      const matchCeg = !cegFilter || it.ceg === cegFilter;
+      const matchName = !itemNameFilter || it.itemName === itemNameFilter;
+      return matchQ && matchJ && matchC && matchS && matchG && matchM && matchCeg && matchName;
     });
-  }, [items, query, joinerFilter, caixaFilter, statusFilter]);
+  }, [items, query, joinerFilter, caixaFilter, statusFilter, grupoFilter, membroFilter, cegFilter, itemNameFilter]);
+
+  const pendingOrders = useMemo(
+    () => pendingItemOrders(itemOrders).sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt)),
+    [itemOrders],
+  );
 
   async function handleDelete(id) {
     const it = items.find((i) => i.id === id);
@@ -79,6 +115,10 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
         <StyledSelect value={joinerFilter} onChange={setJoinerFilter} options={joinerOptions} placeholder="Todos os joiners" />
         <StyledSelect value={caixaFilter} onChange={setCaixaFilter} options={caixaOptions} placeholder="Todas as caixas" />
         <StyledSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} placeholder="Todos os pagamentos" />
+        <StyledSelect value={grupoFilter} onChange={setGrupoFilter} options={grupoOptions} placeholder="Todos os grupos" />
+        <StyledSelect value={membroFilter} onChange={setMembroFilter} options={membroOptions} placeholder="Todos os membros" />
+        <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todos os CEGs" />
+        <StyledSelect value={itemNameFilter} onChange={setItemNameFilter} options={itemNameOptions} placeholder="Todos os sets/itens" />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
@@ -90,6 +130,40 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
           </>
         )}
       </div>
+
+      {unlocked && (
+        <div className="gom-claims-box">
+          <h3>📩 Pedidos de itens disponíveis</h3>
+          <p>{pendingOrders.length === 0 ? 'Nenhum pedido pendente no momento.' : 'Aprove para atribuir o item ao joiner, ou negue para mantê-lo disponível para outra pessoa.'}</p>
+          {pendingOrders.map((order) => {
+            const orderItem = items.find((i) => i.id === order.itemId);
+            const matchedEntry = order.resolvedJoiner ? findRegistryBySocial(registry, order.resolvedJoiner) : null;
+            return (
+              <div className="claim-row" key={order.id}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  {orderItem && <PhotoThumb item={orderItem} size={50} />}
+                  <div className="claim-info">
+                    <b>{orderItem ? itemDisplayTitle(orderItem) : '(item removido)'}</b><br />
+                    {order.pendingCadastro ? (
+                      <>
+                        {order.pendingCadastro.apelido}{order.pendingCadastro.nomeCompleto ? ' — ' + order.pendingCadastro.nomeCompleto : ''} ({order.pendingCadastro.social})
+                        {' '}<span style={{ color: 'var(--pink-deep)' }}>· novo cadastro</span>
+                      </>
+                    ) : (
+                      <>{matchedEntry ? matchedEntry.apelido : order.resolvedJoiner}{matchedEntry?.nomeCompleto ? ' — ' + matchedEntry.nomeCompleto : ''} ({order.resolvedJoiner})</>
+                    )}
+                    <br />Pedido em {formatClaimDate(order.requestedAt)}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button className="btn btn-sage" onClick={() => approveItemOrder(order.id)}>✔ Aprovar</button>
+                  <button className="btn btn-danger" onClick={() => denyItemOrder(order.id)}>✕ Negar</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState title="Nenhum item encontrado">Ajuste a busca ou os filtros, ou adicione um novo item.</EmptyState>

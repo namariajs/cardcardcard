@@ -1,6 +1,6 @@
 import { useApp } from '../context/AppContext';
 import { GOM_ONLY_TABS } from '../lib/constants';
-import { pendingClaims, pendingShippingRequests, arquivoReminders } from '../lib/calc';
+import { pendingClaims, pendingShippingRequests, arquivoReminders, pendingItemOrders } from '../lib/calc';
 
 const TAB_DEFS = [
   { key: 'menu', icon: '🏠', label: 'Menu' },
@@ -15,13 +15,14 @@ const TAB_DEFS = [
 ];
 
 export default function Tabs({ activeTab, onChange }) {
-  const { unlocked, paymentClaims, shippingRequests, items } = useApp();
+  const { unlocked, paymentClaims, shippingRequests, items, itemOrders } = useApp();
 
   function badgeFor(key) {
     if (!unlocked) return 0;
     if (key === 'payments') return pendingClaims(paymentClaims).length;
     if (key === 'frete') return pendingShippingRequests(shippingRequests).length;
     if (key === 'arquivo') return arquivoReminders(shippingRequests, items).length;
+    if (key === 'items') return pendingItemOrders(itemOrders).length;
     return 0;
   }
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { genRegId, formatPhoneBR, normHandle, onlyDigits } from '../../lib/format';
+import { findRegistryConflict } from '../../lib/joiners';
 import Modal from '../shared/Modal';
 
 const BLANK = { apelido: '', nomeCompleto: '', phone: '', social: '' };
@@ -24,19 +25,11 @@ export default function RegistryModal({ entryId, onClose }) {
     if (!apelido) { alert('Informe o apelido do joiner.'); return; }
     if (!social) { alert('Informe o @ do joiner.'); return; }
 
-    const phoneDigits = onlyDigits(phone);
-    const socialLower = social.toLowerCase();
-    const nomeLower = nomeCompleto.toLowerCase();
-
-    const conflict = registry.find((r) => {
-      if (r.id === form.id) return false;
-      if (phoneDigits && onlyDigits(r.phone) === phoneDigits) return true;
-      if (socialLower && String(r.social || '').toLowerCase() === socialLower) return true;
-      if (nomeLower && String(r.nomeCompleto || '').trim().toLowerCase() === nomeLower) return true;
-      return false;
-    });
+    const conflict = findRegistryConflict(registry, { social, phone, nomeCompleto }, form.id);
 
     if (conflict) {
+      const phoneDigits = onlyDigits(phone);
+      const socialLower = social.toLowerCase();
       let field;
       if (phoneDigits && onlyDigits(conflict.phone) === phoneDigits) field = 'esse telefone';
       else if (socialLower && String(conflict.social || '').toLowerCase() === socialLower) field = 'esse @';

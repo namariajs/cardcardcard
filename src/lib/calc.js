@@ -141,6 +141,10 @@ export function pendingClaims(paymentClaims) {
   return paymentClaims.filter((c) => c.status === 'PENDENTE_VERIFICACAO');
 }
 
+export function pendingItemOrders(itemOrders) {
+  return itemOrders.filter((o) => o.status === 'PENDENTE');
+}
+
 export function arquivoReminders(shippingRequests, items) {
   const now = Date.now();
   return shippingRequests

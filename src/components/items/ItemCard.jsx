@@ -4,7 +4,7 @@ import { itemDisplayTitle, statusLabel } from '../../lib/format';
 import PhotoThumb from '../shared/PhotoThumb';
 import ValueBoxes from '../shared/ValueBoxes';
 
-export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete }) {
+export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDuplicate }) {
   const { registry, unlocked } = useApp();
   const regMatch = showJoinerBadge ? findRegistryBySocial(registry, item.joiner) : null;
 
@@ -42,6 +42,7 @@ export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete }) {
         {unlocked && (
           <div className="card-actions">
             <button className="btn btn-ghost" onClick={() => onEdit(item.id)}>✎ Editar</button>
+            <button className="btn btn-ghost" onClick={() => onDuplicate(item)}>⧉ Duplicar</button>
             <button className="btn btn-danger" onClick={() => onDelete(item.id)}>🗑 Remover</button>
           </div>
         )}

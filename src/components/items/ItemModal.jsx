@@ -17,17 +17,37 @@ const BLANK = {
   category: '-', grupo: '-', membro: '-', tipo: 'CEG_INTER',
 };
 
-export default function ItemModal({ itemId, onClose }) {
+// Fields a duplicate keeps from its source item — everything else (joiner, payment
+// status/values/deadlines, envio/caixa/rastreio/notes) starts fresh on the copy.
+const DUPLICATE_FIELDS = ['itemName', 'category', 'grupo', 'membro', 'ceg', 'loja', 'tipo', 'statusCeg'];
+
+export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   const { items, registry, upsertItem, setItemPhoto, clearItemPhoto } = useApp();
   const existing = itemId ? items.find((i) => i.id === itemId) : null;
 
-  const [form, setForm] = useState(() => (existing ? { ...existing } : { ...BLANK, id: genId() }));
+  const [form, setForm] = useState(() => {
+    if (existing) return { ...existing };
+    if (duplicateFrom) {
+      const copied = {};
+      DUPLICATE_FIELDS.forEach((f) => { copied[f] = duplicateFrom[f]; });
+      return { ...BLANK, ...copied, id: genId() };
+    }
+    return { ...BLANK, id: genId() };
+  });
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoDraft, setPhotoDraft] = useState({ dataUrl: null, remove: false });
   const [trackMsg, setTrackMsg] = useState(null);
 
   useEffect(() => {
-    if (existing?.hasPhoto) loadPhoto(existing.id).then((u) => setPhotoUrl(u));
+    if (existing?.hasPhoto) {
+      loadPhoto(existing.id).then((u) => setPhotoUrl(u));
+    } else if (duplicateFrom?.hasPhoto) {
+      // Copying the photo happens as part of Save (via photoDraft, like a fresh upload)
+      // so nothing is written to storage if the GOM cancels out of the duplicate.
+      loadPhoto(duplicateFrom.id).then((u) => {
+        if (u) { setPhotoUrl(u); setPhotoDraft({ dataUrl: u, remove: false }); }
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -129,7 +149,7 @@ export default function ItemModal({ itemId, onClose }) {
 
   return (
     <Modal onClose={onClose}>
-      <h3>{itemId ? 'Editar item' : 'Adicionar item'}</h3>
+      <h3>{itemId ? 'Editar item' : duplicateFrom ? 'Duplicar item' : 'Adicionar item'}</h3>
       <p className="hint">ID: <span className="mono">{form.id}</span></p>
       <div className="form-grid">
         <div className="field full">

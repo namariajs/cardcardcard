@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { genRegId, formatPhoneBR, normHandle } from '../../lib/format';
+import { genRegId, formatPhoneBR, normHandle, onlyDigits } from '../../lib/format';
 import Modal from '../shared/Modal';
 
 const BLANK = { apelido: '', nomeCompleto: '', phone: '', social: '' };
@@ -19,9 +19,33 @@ export default function RegistryModal({ entryId, onClose }) {
   function handleSave() {
     const apelido = form.apelido.trim();
     const social = normHandle(form.social.trim());
+    const nomeCompleto = form.nomeCompleto.trim();
+    const phone = form.phone.trim();
     if (!apelido) { alert('Informe o apelido do joiner.'); return; }
     if (!social) { alert('Informe o @ do joiner.'); return; }
-    upsertRegistryEntry({ id: form.id, apelido, nomeCompleto: form.nomeCompleto.trim(), phone: form.phone.trim(), social });
+
+    const phoneDigits = onlyDigits(phone);
+    const socialLower = social.toLowerCase();
+    const nomeLower = nomeCompleto.toLowerCase();
+
+    const conflict = registry.find((r) => {
+      if (r.id === form.id) return false;
+      if (phoneDigits && onlyDigits(r.phone) === phoneDigits) return true;
+      if (socialLower && String(r.social || '').toLowerCase() === socialLower) return true;
+      if (nomeLower && String(r.nomeCompleto || '').trim().toLowerCase() === nomeLower) return true;
+      return false;
+    });
+
+    if (conflict) {
+      let field;
+      if (phoneDigits && onlyDigits(conflict.phone) === phoneDigits) field = 'esse telefone';
+      else if (socialLower && String(conflict.social || '').toLowerCase() === socialLower) field = 'esse @';
+      else field = 'esse nome completo';
+      alert(`Já existe um joiner cadastrado com ${field} (${conflict.apelido}).`);
+      return;
+    }
+
+    upsertRegistryEntry({ id: form.id, apelido, nomeCompleto, phone, social });
     onClose();
   }
 

@@ -2,7 +2,7 @@ import { useApp } from '../../context/AppContext';
 import { itemDisplayTitle, statusLabel, isInterItem } from '../../lib/format';
 import PaymentFieldCell from '../shared/PaymentFieldCell';
 
-export default function ItemRow({ item, onEdit, onDelete }) {
+export default function ItemRow({ item, onEdit, onDelete, onDuplicate }) {
   const { unlocked } = useApp();
   return (
     <tr>
@@ -20,6 +20,7 @@ export default function ItemRow({ item, onEdit, onDelete }) {
         {unlocked && (
           <>
             <button className="btn btn-ghost" style={{ padding: '5px 8px' }} onClick={() => onEdit(item.id)}>✎</button>{' '}
+            <button className="btn btn-ghost" style={{ padding: '5px 8px' }} onClick={() => onDuplicate(item)}>⧉</button>{' '}
             <button className="btn btn-danger" style={{ padding: '5px 8px' }} onClick={() => onDelete(item.id)}>🗑</button>
           </>
         )}

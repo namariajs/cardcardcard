@@ -19,6 +19,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
   const [viewMode, setViewMode] = useState('cards');
   const [editingId, setEditingId] = useState(undefined); // undefined = closed, null = new item, string = edit
   const [deletingId, setDeletingId] = useState(null);
+  const [duplicatingItem, setDuplicatingItem] = useState(null);
 
   useEffect(() => {
     if (externalQuery) { setQuery(externalQuery); onExternalQueryConsumed?.(); }
@@ -85,7 +86,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
       ) : viewMode === 'cards' ? (
         <div className="grid">
           {filtered.map((it) => (
-            <ItemCard key={it.id} item={it} showJoinerBadge onEdit={setEditingId} onDelete={setDeletingId} />
+            <ItemCard key={it.id} item={it} showJoinerBadge onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />
           ))}
         </div>
       ) : (
@@ -95,13 +96,14 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
               <tr><th>Item</th><th>Joiner</th><th>CEG</th><th>Item</th><th>Frete Inter</th><th>Taxa</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
-              {filtered.map((it) => <ItemRow key={it.id} item={it} onEdit={setEditingId} onDelete={setDeletingId} />)}
+              {filtered.map((it) => <ItemRow key={it.id} item={it} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
             </tbody>
           </table>
         </div>
       )}
 
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}
+      {duplicatingItem && <ItemModal itemId={null} duplicateFrom={duplicatingItem} onClose={() => setDuplicatingItem(null)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover item"

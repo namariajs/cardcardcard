@@ -20,6 +20,7 @@ export default function MyPanelTab() {
   const [statusFilter, setStatusFilter] = useState('');
   const [editingId, setEditingId] = useState(undefined);
   const [deletingId, setDeletingId] = useState(null);
+  const [duplicatingItem, setDuplicatingItem] = useState(null);
 
   function doLookup() {
     const raw = inputDraft.trim();
@@ -117,7 +118,7 @@ export default function MyPanelTab() {
             <EmptyState title="Nenhum item corresponde à busca">Ajuste os filtros acima.</EmptyState>
           ) : viewMode === 'cards' ? (
             <div className="grid">
-              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} onEdit={setEditingId} onDelete={setDeletingId} />)}
+              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -137,6 +138,7 @@ export default function MyPanelTab() {
                       {unlocked && (
                         <td>
                           <button className="btn btn-ghost" style={{ padding: '5px 8px' }} onClick={() => setEditingId(it.id)}>✎</button>{' '}
+                          <button className="btn btn-ghost" style={{ padding: '5px 8px' }} onClick={() => setDuplicatingItem(it)}>⧉</button>{' '}
                           <button className="btn btn-danger" style={{ padding: '5px 8px' }} onClick={() => setDeletingId(it.id)}>🗑</button>
                         </td>
                       )}
@@ -150,6 +152,7 @@ export default function MyPanelTab() {
       )}
 
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}
+      {duplicatingItem && <ItemModal itemId={null} duplicateFrom={duplicatingItem} onClose={() => setDuplicatingItem(null)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover item"

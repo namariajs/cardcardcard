@@ -65,7 +65,7 @@ export function computeStats(items) {
     else if (it.pagFreteNacional === 'PAGO') confirmedValue += Number(it.valorFreteNacional) || 0;
     else if (it.pagFreteNacional === 'ATRASADO') { lateValue += Number(it.valorFreteNacional) || 0; lateCount++; }
   });
-  const joinerCount = new Set(items.map((i) => i.joiner)).size;
+  const joinerCount = new Set(items.filter((i) => !i.unclaimed).map((i) => i.joiner)).size;
   const cegCount = new Set(items.map((i) => i.ceg).filter((c) => c && c.trim())).size;
   return { total, pendingValue, confirmedValue, lateValue, lateCount, joinerCount, cegCount };
 }

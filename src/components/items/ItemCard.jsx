@@ -19,15 +19,17 @@ export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDu
             {unlocked && <div className="item-id mono">{item.id}</div>}
           </div>
           {showJoinerBadge && (
-            <span className="item-joiner">{item.joiner}{regMatch ? '' : ' ⚠'}</span>
+            item.unclaimed
+              ? <span className="item-joiner unclaimed">🟢 Disponível</span>
+              : <span className="item-joiner">{item.joiner}{regMatch ? '' : ' ⚠'}</span>
           )}
         </div>
-        {showJoinerBadge && regMatch && (
+        {showJoinerBadge && !item.unclaimed && regMatch && (
           <div className="meta-row" style={{ marginTop: -4 }}>
             <b>{regMatch.apelido}</b>{unlocked && regMatch.nomeCompleto ? ' — ' + regMatch.nomeCompleto : ''}
           </div>
         )}
-        {showJoinerBadge && !regMatch && (
+        {showJoinerBadge && !item.unclaimed && !regMatch && (
           <div className="meta-row" style={{ marginTop: -4, color: 'var(--pink-deep)' }}>Joiner não cadastrado</div>
         )}
         <div className="meta-row"><b>Loja/POB:</b> {item.loja || '—'}</div>

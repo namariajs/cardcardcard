@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   paymentClaims: 'gom-payment-claims',
   shippingRequests: 'gom-shipping-requests',
   interBoxes: 'gom-inter-boxes',
+  memberRosters: 'gom-member-rosters',
 };
 
 export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter'];
@@ -76,6 +77,18 @@ export const PAYMENT_FIELDS_BY_KEY = Object.fromEntries(PAYMENT_FIELDS.map((f) =
 export const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 
 export const REMINDER_DAYS = 7;
+
+// Shared by ItemModal (new/edit/duplicate item) and SetModal (bulk-create from a member
+// list) — every field a fresh item needs before the user or a set fills anything in.
+export const BLANK_ITEM = {
+  joiner: '', itemName: '', ceg: '', loja: '',
+  valorItem: 0, valorFreteInter: 0, valorTaxa: 0, valorFreteNacional: 0,
+  pagItem: 'PENDENTE', pagFreteInter: 'PENDENTE', pagTaxa: 'PENDENTE', pagFreteNacional: 'PENDENTE',
+  prazoItem: null, prazoFreteInter: null, prazoTaxa: null,
+  pagItemPaidAt: null, pagFreteInterPaidAt: null, pagTaxaPaidAt: null,
+  statusCeg: '-', statusEnvio: '-', rastreio: '-', notes: '', caixa: '-', hasPhoto: false,
+  category: '-', grupo: '-', membro: '-', tipo: 'CEG_INTER', unclaimed: false,
+};
 
 export const SEED_ITEMS = [
   { id: 'ITM-8F3K21', joiner: '@hanjirxse', itemName: 'Photocard', category: 'PHOTOCARD', grupo: 'ZB1', membro: 'Han', ceg: 'CEG MERCH SANRIO', loja: 'Flocked Keyring', valorItem: 75, valorFreteInter: 2.32, valorTaxa: 0, valorFreteNacional: 0, tipo: 'CEG_INTER', pagItem: 'PAGO', pagFreteInter: 'PENDENTE', pagTaxa: 'PENDENTE', pagFreteNacional: 'PENDENTE', statusCeg: 'CHEGOU_GOM', statusEnvio: '-', rastreio: '-', notes: '', caixa: '-', hasPhoto: false },

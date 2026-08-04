@@ -9,6 +9,7 @@ export const genBatchId = () => 'BATCH-' + Math.random().toString(36).slice(2, 8
 export const genShipId = () => 'SHIP-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genInterBoxId = () => 'IBOX-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genInterCatId = () => 'ICAT-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+export const genRosterId = () => 'ROS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
 export const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
 

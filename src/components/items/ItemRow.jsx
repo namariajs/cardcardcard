@@ -10,7 +10,7 @@ export default function ItemRow({ item, onEdit, onDelete, onDuplicate }) {
         <b>{itemDisplayTitle(item)}</b>
         {unlocked && <><br /><span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{item.id}</span></>}
       </td>
-      <td>{item.joiner}</td>
+      <td>{item.unclaimed ? '🟢 Disponível' : item.joiner}</td>
       <td>{item.ceg}</td>
       <td><PaymentFieldCell item={item} fieldKey="item" /></td>
       <td><PaymentFieldCell item={item} fieldKey="freteInter" visible={isInterItem(item)} /></td>

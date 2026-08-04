@@ -10,6 +10,7 @@ export default function JoinersTab({ onPickJoiner }) {
   const entries = useMemo(() => {
     const map = {};
     items.forEach((it) => {
+      if (it.unclaimed) return;
       if (!map[it.joiner]) map[it.joiner] = { count: 0, total: 0, pending: 0 };
       map[it.joiner].count++;
       const total = (Number(it.valorItem) || 0) + (Number(it.valorFreteInter) || 0) + (Number(it.valorTaxa) || 0);

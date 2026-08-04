@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import ItemCard from '../items/ItemCard';
 import ItemRow from '../items/ItemRow';
 import ItemModal from '../items/ItemModal';
+import SetModal from '../items/SetModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import StyledSelect from '../shared/StyledSelect';
@@ -20,6 +21,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
   const [editingId, setEditingId] = useState(undefined); // undefined = closed, null = new item, string = edit
   const [deletingId, setDeletingId] = useState(null);
   const [duplicatingItem, setDuplicatingItem] = useState(null);
+  const [creatingSet, setCreatingSet] = useState(false);
 
   useEffect(() => {
     if (externalQuery) { setQuery(externalQuery); onExternalQueryConsumed?.(); }
@@ -29,7 +31,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
     if (externalJoinerFilter) { setJoinerFilter(externalJoinerFilter); onExternalJoinerFilterConsumed?.(); }
   }, [externalJoinerFilter, onExternalJoinerFilterConsumed]);
 
-  const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].sort(), [items]);
+  const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].filter(Boolean).sort(), [items]);
   const caixas = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
 
   const joinerOptions = useMemo(() => [
@@ -77,7 +79,10 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
         </button>
         {unlocked && (
-          <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
+          <>
+            <button className="btn btn-ghost" onClick={() => setCreatingSet(true)}>🗂️ Novo Set</button>
+            <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
+          </>
         )}
       </div>
 
@@ -104,6 +109,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
 
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}
       {duplicatingItem && <ItemModal itemId={null} duplicateFrom={duplicatingItem} onClose={() => setDuplicatingItem(null)} />}
+      {creatingSet && <SetModal onClose={() => setCreatingSet(false)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover item"

@@ -2,20 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
 import { genId } from '../../lib/format';
-import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS, PAYMENT_FIELDS } from '../../lib/constants';
+import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS, PAYMENT_FIELDS, BLANK_ITEM } from '../../lib/constants';
 import { resizeImageFile, loadPhoto } from '../../lib/storage';
 import Modal from '../shared/Modal';
 import AutocompleteInput from '../shared/AutocompleteInput';
 
-const BLANK = {
-  joiner: '', itemName: '', ceg: '', loja: '',
-  valorItem: 0, valorFreteInter: 0, valorTaxa: 0, valorFreteNacional: 0,
-  pagItem: 'PENDENTE', pagFreteInter: 'PENDENTE', pagTaxa: 'PENDENTE', pagFreteNacional: 'PENDENTE',
-  prazoItem: null, prazoFreteInter: null, prazoTaxa: null,
-  pagItemPaidAt: null, pagFreteInterPaidAt: null, pagTaxaPaidAt: null,
-  statusCeg: '-', statusEnvio: '-', rastreio: '-', notes: '', caixa: '-', hasPhoto: false,
-  category: '-', grupo: '-', membro: '-', tipo: 'CEG_INTER',
-};
+const BLANK = BLANK_ITEM;
 
 // Fields a duplicate keeps from its source item — everything else (joiner, payment
 // status/deadlines, freteInter/taxa values, envio/caixa/rastreio/notes) starts fresh on the copy.
@@ -102,9 +94,15 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
 
   async function handleSave() {
     const joinerResolved = resolveJoinerInput(registry, form.joiner);
+    const hasJoiner = !!joinerResolved.value;
     const newItem = {
       ...form,
-      joiner: joinerResolved.value || '@sem-nome',
+      // A real joiner assigned now always clears unclaimed; leaving the joiner blank keeps
+      // whatever unclaimed already was — true stays true (still up for grabs), and normal
+      // items with no joiner keep the long-standing '@sem-nome' placeholder instead of
+      // silently becoming "unclaimed".
+      joiner: hasJoiner ? joinerResolved.value : (form.unclaimed ? '' : '@sem-nome'),
+      unclaimed: hasJoiner ? false : !!form.unclaimed,
       itemName: (form.itemName || '').trim() || 'Item sem nome',
       grupo: (form.grupo || '').trim() || '-',
       membro: (form.membro || '').trim() || '-',

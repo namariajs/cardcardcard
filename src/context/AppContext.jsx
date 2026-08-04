@@ -14,6 +14,7 @@ export function AppProvider({ children }) {
   const [paymentClaims, setPaymentClaims] = usePersistedState(STORAGE_KEYS.paymentClaims, []);
   const [shippingRequests, setShippingRequests] = usePersistedState(STORAGE_KEYS.shippingRequests, [], migrateShippingRequests);
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
+  const [memberRosters, setMemberRosters] = usePersistedState(STORAGE_KEYS.memberRosters, []);
 
   const [unlocked, setUnlocked] = useState(false);
 
@@ -53,6 +54,18 @@ export function AppProvider({ children }) {
   }
   function removeRegistryEntry(id) {
     setRegistry((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  // ---------- member rosters ----------
+  function upsertMemberRoster(roster) {
+    setMemberRosters((prev) => {
+      const idx = prev.findIndex((r) => r.id === roster.id);
+      if (idx > -1) { const copy = [...prev]; copy[idx] = roster; return copy; }
+      return [...prev, roster];
+    });
+  }
+  function removeMemberRoster(id) {
+    setMemberRosters((prev) => prev.filter((r) => r.id !== id));
   }
 
   // ---------- payment claims ----------
@@ -189,6 +202,7 @@ export function AppProvider({ children }) {
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,
     registry, setRegistry, upsertRegistryEntry, removeRegistryEntry,
+    memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
     paymentClaims, setPaymentClaims, submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim,
     shippingRequests, setShippingRequests, createShippingRequest, updateShippingRequest, cancelShippingRequest,
     interBoxes, setInterBoxes, createInterBox, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox,
@@ -196,7 +210,7 @@ export function AppProvider({ children }) {
     unlocked, tryUnlock, lock,
     genId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, registry, paymentClaims, shippingRequests, interBoxes, unlocked]);
+  }), [items, registry, memberRosters, paymentClaims, shippingRequests, interBoxes, unlocked]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

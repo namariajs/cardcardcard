@@ -19,6 +19,7 @@ export function migrateItems(list) {
     if (it.pagItemPaidAt === undefined) it.pagItemPaidAt = null;
     if (it.pagFreteInterPaidAt === undefined) it.pagFreteInterPaidAt = null;
     if (it.pagTaxaPaidAt === undefined) it.pagTaxaPaidAt = null;
+    if (it.unclaimed === undefined) it.unclaimed = false;
     // ATRASADO is no longer a manually stored status for these 3 fields — normalize any
     // legacy value back to PENDENTE; lateness is now derived from prazo/paidAt instead.
     if (it.pagItem === 'ATRASADO') it.pagItem = 'PENDENTE';

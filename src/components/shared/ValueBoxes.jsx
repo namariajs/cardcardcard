@@ -18,11 +18,11 @@ export default function ValueBoxes({ item }) {
           <span className="lbl">{b.label}</span>
           <span className="amt">{fmt(b.eff.total)}</span>
           {b.eff.fee > 0 && (
-            <span className="late-fee-note" style={{ display: 'block', marginTop: 2 }}>
+            <span className="late-fee-note">
               + {fmt(b.eff.fee)} de atraso ({b.eff.lateDays} {b.eff.lateDays === 1 ? 'dia' : 'dias'})
             </span>
           )}
-          <span style={{ display: 'block', marginTop: 4 }}>
+          <span className="val-box-badge">
             <span className={`badge ${pagClass(b.eff.status)}`}>{b.eff.status}</span>
           </span>
         </div>

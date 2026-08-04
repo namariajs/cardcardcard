@@ -16,16 +16,16 @@ import { supabase } from './supabaseClient';
 const TABLE = 'app_storage';
 
 export const storage = {
+  // Unlike the other methods here, this one intentionally lets errors propagate (instead of
+  // catching and returning null) — callers like loadJSON need to tell "key genuinely has no
+  // row yet" (data is null, error is null) apart from "the request failed" (network blip,
+  // RLS hiccup, timeout), since silently treating the latter as the former is how a transient
+  // failure turns into real stored data getting overwritten by a fallback default.
   async get(key) {
-    try {
-      const { data, error } = await supabase.from(TABLE).select('value').eq('key', key).maybeSingle();
-      if (error) throw error;
-      if (!data) return null;
-      return { key, value: data.value };
-    } catch (e) {
-      console.error('storage.get error', e);
-      return null;
-    }
+    const { data, error } = await supabase.from(TABLE).select('value').eq('key', key).maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return { key, value: data.value };
   },
 
   async set(key, value) {
@@ -66,13 +66,11 @@ export const storage = {
 // Most of the app stores whole collections (items, registry, etc.) as a single JSON blob
 // per key, so these small helpers save every call site from repeating try/parse boilerplate.
 
+// Also lets errors propagate rather than swallowing them into `fallback` — see the note on
+// storage.get above. A malformed JSON.parse is a real problem too, not an empty collection.
 export async function loadJSON(key, fallback) {
-  try {
-    const res = await storage.get(key);
-    return res && res.value ? JSON.parse(res.value) : fallback;
-  } catch (e) {
-    return fallback;
-  }
+  const res = await storage.get(key);
+  return res && res.value ? JSON.parse(res.value) : fallback;
 }
 
 export async function saveJSON(key, value) {

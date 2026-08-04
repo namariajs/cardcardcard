@@ -435,6 +435,18 @@
   }
   .autocomplete-option{ padding:8px 10px; border-radius:10px; font-size:13.5px; color:var(--ink); cursor:pointer; }
   .autocomplete-option:hover{ background:var(--pink-light); }
+  .autocomplete-option.selected{ color:var(--pink-deep); font-weight:600; }
+
+  .styled-select-wrap{ position:relative; display:inline-block; }
+  .styled-select{
+    font-family:inherit; font-size:13.5px; min-width:150px;
+    border:1px solid var(--border); border-radius:11px;
+    padding:9px 12px; background:#fff; color:var(--ink);
+    display:inline-flex; align-items:center; justify-content:space-between; gap:8px;
+    cursor:pointer;
+  }
+  .styled-select:focus-visible{ outline:2px solid var(--pink); outline-offset:1px; }
+  .styled-select-arrow{ font-size:10px; color:var(--ink-soft); }
 
   .empty{
     text-align:center; padding:56px 20px; color:var(--ink-soft);

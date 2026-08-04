@@ -5,6 +5,7 @@ import ItemRow from '../items/ItemRow';
 import ItemModal from '../items/ItemModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
+import StyledSelect from '../shared/StyledSelect';
 import { deletePhoto } from '../../lib/storage';
 import { paymentFieldEffective } from '../../lib/calc';
 import { PAYMENT_FIELDS } from '../../lib/constants';
@@ -30,6 +31,21 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
   const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].sort(), [items]);
   const caixas = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
 
+  const joinerOptions = useMemo(() => [
+    { value: '', label: 'Todos os joiners' },
+    ...joiners.map((j) => ({ value: j, label: j })),
+  ], [joiners]);
+  const caixaOptions = useMemo(() => [
+    { value: '', label: 'Todas as caixas' },
+    ...caixas.map((c) => ({ value: c, label: `📦 ${c}` })),
+  ], [caixas]);
+  const statusOptions = [
+    { value: '', label: 'Todos os pagamentos' },
+    { value: 'PENDENTE', label: 'Pendentes' },
+    { value: 'PAGO', label: 'Pagos' },
+    { value: 'ATRASADO', label: 'Atrasados' },
+  ];
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
@@ -52,28 +68,16 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
       <div className="toolbar">
         <input type="search" placeholder="Buscar por joiner, item, CEG, ID..." style={{ minWidth: 220 }}
           value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select value={joinerFilter} onChange={(e) => setJoinerFilter(e.target.value)}>
-          <option value="">Todos os joiners</option>
-          {joiners.map((j) => <option key={j} value={j}>{j}</option>)}
-        </select>
-        <select value={caixaFilter} onChange={(e) => setCaixaFilter(e.target.value)}>
-          <option value="">Todas as caixas</option>
-          {caixas.map((c) => <option key={c} value={c}>📦 {c}</option>)}
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">Todos os pagamentos</option>
-          <option value="PENDENTE">Pendentes</option>
-          <option value="PAGO">Pagos</option>
-          <option value="ATRASADO">Atrasados</option>
-        </select>
+        <StyledSelect value={joinerFilter} onChange={setJoinerFilter} options={joinerOptions} placeholder="Todos os joiners" />
+        <StyledSelect value={caixaFilter} onChange={setCaixaFilter} options={caixaOptions} placeholder="Todas as caixas" />
+        <StyledSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} placeholder="Todos os pagamentos" />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
         </button>
-        <button className="btn btn-primary" onClick={() => {
-          if (!unlocked) { alert('Desbloqueie o Modo GOM para adicionar itens.'); return; }
-          setEditingId(null);
-        }}>+ Adicionar item</button>
+        {unlocked && (
+          <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
+        )}
       </div>
 
       {filtered.length === 0 ? (

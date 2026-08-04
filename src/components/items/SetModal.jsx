@@ -166,13 +166,16 @@ export default function SetModal({ onClose }) {
       <button type="button" className="btn btn-ghost" style={{ marginTop: 6 }} onClick={addMember}>+ Adicionar membro</button>
 
       {!rosterId && (
-        <div className="field full" style={{ marginTop: 14 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ marginTop: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <input type="checkbox" checked={saveAsRoster} onChange={(e) => setSaveAsRoster(e.target.checked)} />
-            💾 Salvar esta lista de membros como roster
+            <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>💾 Salvar esta lista de membros como roster</span>
           </label>
           {saveAsRoster && (
-            <input style={{ marginTop: 6 }} placeholder="Nome do roster (ex: Stray Kids)" value={rosterName} onChange={(e) => setRosterName(e.target.value)} />
+            <div className="field" style={{ marginTop: 10 }}>
+              <label>Nome do roster</label>
+              <input placeholder="Ex: Stray Kids" value={rosterName} onChange={(e) => setRosterName(e.target.value)} />
+            </div>
           )}
         </div>
       )}

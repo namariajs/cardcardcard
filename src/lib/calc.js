@@ -5,8 +5,12 @@ const LATE_FEE_PER_DAY = 1;
 
 // deadline is a date-only ISO string ("2026-08-04"); paidAt (when set) is a full ISO
 // timestamp. Late days are frozen at the paid moment so the fee stops growing once paid.
-export function computeLateFee(deadline, paidAt) {
+// isPago covers items marked PAGO with no paidAt on record (set before automatic
+// timestamping existed, or restored from older data) — there's no reliable moment to
+// measure lateness against, so they're treated as fee-free rather than still accruing.
+export function computeLateFee(deadline, paidAt, isPago = false) {
   if (!deadline) return { lateDays: 0, fee: 0 };
+  if (isPago && !paidAt) return { lateDays: 0, fee: 0 };
   const deadlineMs = new Date(deadline).getTime();
   const referenceMs = paidAt ? new Date(paidAt).getTime() : Date.now();
   const lateDays = Math.max(0, Math.floor((referenceMs - deadlineMs) / 86400000));
@@ -24,8 +28,9 @@ export function paymentFieldEffective(item, fieldDef) {
   const base = Number(item[fieldDef.valField]) || 0;
   const deadline = item[fieldDef.prazoField] || null;
   const paidAt = item[fieldDef.paidAtField] || null;
-  const { lateDays, fee } = computeLateFee(deadline, paidAt);
-  const status = effectivePagStatus(item[fieldDef.pagField], deadline, paidAt);
+  const pagStatus = item[fieldDef.pagField];
+  const { lateDays, fee } = computeLateFee(deadline, paidAt, pagStatus === 'PAGO');
+  const status = effectivePagStatus(pagStatus, deadline, paidAt);
   return { status, lateDays, fee, total: base + fee };
 }
 

@@ -11,6 +11,10 @@ import { deletePhoto } from '../../lib/storage';
 import { paymentFieldEffective } from '../../lib/calc';
 import { PAYMENT_FIELDS } from '../../lib/constants';
 
+// Sentinel joinerFilter value meaning "unclaimed items only" — distinct from any real
+// handle since normHandle always prefixes those with '@'.
+const UNCLAIMED_FILTER = '__unclaimed__';
+
 export default function ItemsTab({ externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
   const { items, unlocked, removeItem } = useApp();
   const [query, setQuery] = useState('');
@@ -36,6 +40,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
 
   const joinerOptions = useMemo(() => [
     { value: '', label: 'Todos os joiners' },
+    { value: UNCLAIMED_FILTER, label: '🟢 Apenas disponíveis' },
     ...joiners.map((j) => ({ value: j, label: j })),
   ], [joiners]);
   const caixaOptions = useMemo(() => [
@@ -53,7 +58,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
       const matchQ = !q || [it.joiner, it.itemName, it.ceg, it.id, it.loja, it.caixa, it.grupo, it.membro].join(' ').toLowerCase().includes(q);
-      const matchJ = !joinerFilter || it.joiner === joinerFilter;
+      const matchJ = !joinerFilter || (joinerFilter === UNCLAIMED_FILTER ? it.unclaimed : it.joiner === joinerFilter);
       const matchC = !caixaFilter || it.caixa === caixaFilter;
       const matchS = !statusFilter || PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === statusFilter);
       return matchQ && matchJ && matchC && matchS;

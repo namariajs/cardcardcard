@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import RegistryModal from '../registry/RegistryModal';
+import BulkImportRegistryModal from '../registry/BulkImportRegistryModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 
@@ -9,6 +10,7 @@ export default function RegistryTab() {
   const [search, setSearch] = useState('');
   const [editingId, setEditingId] = useState(undefined);
   const [deletingId, setDeletingId] = useState(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -26,6 +28,7 @@ export default function RegistryTab() {
       <div className="registry-toolbar">
         <input type="search" placeholder="Buscar por apelido, nome, @ ou telefone..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <span className="spacer" />
+        <button className="btn btn-ghost" onClick={() => setBulkImportOpen(true)}>📋 Importar em lote</button>
         <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Cadastrar joiner</button>
       </div>
 
@@ -49,6 +52,7 @@ export default function RegistryTab() {
       )}
 
       {editingId !== undefined && <RegistryModal entryId={editingId} onClose={() => setEditingId(undefined)} />}
+      {bulkImportOpen && <BulkImportRegistryModal onClose={() => setBulkImportOpen(false)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover joiner"

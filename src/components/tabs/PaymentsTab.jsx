@@ -162,6 +162,9 @@ export default function PaymentsTab() {
       <div className="panel-intro">
         <h3>💳 Avisar pagamento</h3>
         <p>Digite seu @ ou telefone para ver seus itens pendentes e avisar quando pagar.</p>
+        <p style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: -10 }}>
+          Pagou mais de um item de uma vez? Selecione todos os itens e envie um único aviso com o comprovante.
+        </p>
         <div className="panel-lookup-row">
           <input type="text" placeholder="@seuusuario ou telefone (ex: 11912345678)" value={inputDraft}
             onChange={(e) => setInputDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') doLookup(); }} />
@@ -211,7 +214,7 @@ export default function PaymentsTab() {
         <div className="pay-card" style={{ position: 'sticky', bottom: 14, zIndex: 5 }}>
           <div className="pay-card-head">
             <h4>💸 Avisar pagamento em lote</h4>
-            <span>{selectedEntries.length} campos selecionados · Total: {fmt(selectedTotal)}</span>
+            <span>{selectedEntries.length} campos selecionados · Total: <b style={{ fontSize: 20, fontWeight: 700, color: 'var(--pink-deep)', fontFamily: "'Outfit',sans-serif" }}>{fmt(selectedTotal)}</b></span>
           </div>
           <div className="pay-form" style={{ marginLeft: 0 }}>
             <select value={batchMethod} onChange={(e) => setBatchMethod(e.target.value)}>

@@ -207,7 +207,7 @@ export default function ItemModal({ itemId, onClose }) {
           </select>
         </div>
         <div className="field">
-          <label>Prazo</label>
+          <label>Prazo Item</label>
           <input type="date" value={form.prazoItem || ''} onChange={(e) => set('prazoItem', e.target.value || null)} />
         </div>
 
@@ -224,7 +224,7 @@ export default function ItemModal({ itemId, onClose }) {
               </select>
             </div>
             <div className="field">
-              <label>Prazo</label>
+              <label>Prazo Frete Inter</label>
               <input type="date" value={form.prazoFreteInter || ''} onChange={(e) => set('prazoFreteInter', e.target.value || null)} />
             </div>
             <div className="field">
@@ -238,7 +238,7 @@ export default function ItemModal({ itemId, onClose }) {
               </select>
             </div>
             <div className="field">
-              <label>Prazo</label>
+              <label>Prazo Taxa</label>
               <input type="date" value={form.prazoTaxa || ''} onChange={(e) => set('prazoTaxa', e.target.value || null)} />
             </div>
           </>

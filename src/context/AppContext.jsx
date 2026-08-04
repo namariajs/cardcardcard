@@ -126,6 +126,17 @@ export function AppProvider({ children }) {
     setInterBoxes((prev) => prev.map((b) => (b.id === id ? { ...b, ...(typeof patch === 'function' ? patch(b) : patch) } : b)));
   }
   function deleteInterBox(id) {
+    const box = interBoxes.find((b) => b.id === id);
+    const itemIds = box?.itemIds || [];
+    if (itemIds.length) {
+      setItems((prev) => prev.map((it) => {
+        if (!itemIds.includes(it.id)) return it;
+        let statusCeg = it.statusCeg;
+        if (statusCeg === 'CAMINHO_BRASIL') statusCeg = 'NA_WAREHOUSE';
+        else if (statusCeg === 'TAXADA_RF') statusCeg = 'CAMINHO_BRASIL';
+        return { ...it, valorFreteInter: 0, valorTaxa: 0, statusCeg };
+      }));
+    }
     setInterBoxes((prev) => prev.filter((b) => b.id !== id));
   }
   function addInterCategory(boxId) {

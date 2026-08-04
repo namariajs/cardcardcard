@@ -1,14 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { computeStats } from '../lib/calc';
 import { fmt, formatLastUpdated } from '../lib/format';
-import { LAST_UPDATED_ISO } from '../lib/constants';
+import { storage, onStorageWrite } from '../lib/storage';
 import CegModal from './CegModal';
 
 export default function StatsBar({ onFilterByCeg, onGoToItems }) {
   const { items, unlocked } = useApp();
   const [showCegModal, setShowCegModal] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
   const s = computeStats(items);
+
+  useEffect(() => {
+    let cancelled = false;
+    function refresh() {
+      storage.getLastUpdatedAt().then((iso) => { if (!cancelled) setLastUpdated(iso); });
+    }
+    refresh();
+    const unsubscribe = onStorageWrite(refresh);
+    return () => { cancelled = true; unsubscribe(); };
+  }, []);
 
   return (
     <div className="stats-wrap">
@@ -29,7 +40,7 @@ export default function StatsBar({ onFilterByCeg, onGoToItems }) {
           </>
         )}
         <div className="stat"><div className="stat-label">Joiners</div><div className="stat-value">{s.joinerCount}</div></div>
-        <div className="stat"><div className="stat-label">Última atualização</div><div className="stat-value" style={{ fontSize: 16 }}>{formatLastUpdated(LAST_UPDATED_ISO)}</div></div>
+        <div className="stat"><div className="stat-label">Última atualização</div><div className="stat-value" style={{ fontSize: 16 }}>{lastUpdated ? formatLastUpdated(lastUpdated) : '—'}</div></div>
       </div>
       {showCegModal && (
         <CegModal

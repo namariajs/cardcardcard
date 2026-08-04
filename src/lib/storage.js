@@ -15,6 +15,14 @@ import { supabase } from './supabaseClient';
 
 const TABLE = 'app_storage';
 
+// Notified after every successful write, so UI that wants to reflect "last modified" (e.g.
+// StatsBar's "Última atualização") can refresh live instead of only on page load.
+const writeListeners = new Set();
+export function onStorageWrite(fn) {
+  writeListeners.add(fn);
+  return () => writeListeners.delete(fn);
+}
+
 export const storage = {
   // Unlike the other methods here, this one intentionally lets errors propagate (instead of
   // catching and returning null) — callers like loadJSON need to tell "key genuinely has no
@@ -28,10 +36,15 @@ export const storage = {
     return { key, value: data.value };
   },
 
+  // Sets updated_at explicitly rather than relying on the column's now() default — a
+  // default only fills in on INSERT, but upsert() turns into an UPDATE for a key that
+  // already exists, and Postgres never re-runs a column default on UPDATE. Without this,
+  // updated_at would freeze at the row's original insert time forever.
   async set(key, value) {
     try {
-      const { error } = await supabase.from(TABLE).upsert({ key, value });
+      const { error } = await supabase.from(TABLE).upsert({ key, value, updated_at: new Date().toISOString() });
       if (error) throw error;
+      writeListeners.forEach((fn) => fn());
       return { key, value };
     } catch (e) {
       console.error('storage.set error', e);
@@ -46,6 +59,19 @@ export const storage = {
       return { key, deleted: true };
     } catch (e) {
       console.error('storage.delete error', e);
+      return null;
+    }
+  },
+
+  // Most recent updated_at across every row — items, registry, photos, receipts, anything
+  // — used to show a real "last modified" timestamp instead of a hand-maintained constant.
+  async getLastUpdatedAt() {
+    try {
+      const { data, error } = await supabase.from(TABLE).select('updated_at').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      return data ? data.updated_at : null;
+    } catch (e) {
+      console.error('storage.getLastUpdatedAt error', e);
       return null;
     }
   },

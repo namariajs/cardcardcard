@@ -18,8 +18,8 @@ const BLANK = {
 };
 
 // Fields a duplicate keeps from its source item — everything else (joiner, payment
-// status/values/deadlines, envio/caixa/rastreio/notes) starts fresh on the copy.
-const DUPLICATE_FIELDS = ['itemName', 'category', 'grupo', 'membro', 'ceg', 'loja', 'tipo', 'statusCeg'];
+// status/deadlines, freteInter/taxa values, envio/caixa/rastreio/notes) starts fresh on the copy.
+const DUPLICATE_FIELDS = ['itemName', 'category', 'grupo', 'membro', 'ceg', 'loja', 'tipo', 'statusCeg', 'valorItem'];
 
 export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   const { items, registry, upsertItem, setItemPhoto, clearItemPhoto } = useApp();

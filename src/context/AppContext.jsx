@@ -1,9 +1,10 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
-import { STORAGE_KEYS, GOM_PIN, SEED_ITEMS, PAYMENT_FIELDS } from '../lib/constants';
+import { STORAGE_KEYS, SEED_ITEMS, PAYMENT_FIELDS } from '../lib/constants';
 import { migrateItems, migrateShippingRequests, migrateInterBoxes } from '../lib/migrations';
 import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId } from '../lib/format';
 import { savePhoto, deletePhoto, deleteReceipt } from '../lib/storage';
+import { supabase } from '../lib/supabaseClient';
 
 const AppContext = createContext(null);
 
@@ -15,6 +16,20 @@ export function AppProvider({ children }) {
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
 
   const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setUnlocked(!!data.session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUnlocked(!!session);
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   // ---------- items ----------
   function upsertItem(item) {
@@ -165,11 +180,11 @@ export function AppProvider({ children }) {
     await deletePhoto(id);
   }
 
-  function tryUnlock(pin) {
-    if (pin === GOM_PIN) { setUnlocked(true); return true; }
-    return false;
+  async function tryUnlock(email, password) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return !error;
   }
-  function lock() { setUnlocked(false); }
+  function lock() { supabase.auth.signOut(); }
 
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,

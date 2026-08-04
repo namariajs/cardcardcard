@@ -3,12 +3,18 @@ import { useApp } from '../context/AppContext';
 
 export default function TopBar() {
   const { unlocked, tryUnlock, lock } = useApp();
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleClick() {
+  async function handleClick() {
     if (unlocked) { lock(); return; }
-    if (tryUnlock(pin)) setPin('');
-    else alert('PIN incorreto.');
+    if (loading) return;
+    setLoading(true);
+    const ok = await tryUnlock(email, password);
+    setLoading(false);
+    if (ok) { setEmail(''); setPassword(''); }
+    else alert('Email ou senha incorretos.');
   }
 
   return (
@@ -17,16 +23,25 @@ export default function TopBar() {
       <div className={`lock-chip${unlocked ? ' unlocked' : ''}`}>
         <span>{unlocked ? '🔓' : '🔒'}</span>
         {!unlocked && (
-          <input
-            type="password"
-            placeholder="PIN"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
-          />
+          <div className="lock-fields">
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+            />
+            <input
+              type="password"
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+            />
+          </div>
         )}
-        <button className="btn btn-primary" style={{ padding: '6px 12px' }} onClick={handleClick}>
-          {unlocked ? 'Sair' : 'Entrar'}
+        <button className="btn btn-primary" style={{ padding: '6px 12px' }} onClick={handleClick} disabled={loading}>
+          {unlocked ? 'Sair' : loading ? '...' : 'Entrar'}
         </button>
       </div>
     </div>

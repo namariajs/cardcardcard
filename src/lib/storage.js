@@ -2,26 +2,26 @@
 //
 // The original single-file prototype ran inside Claude's artifact sandbox and used a
 // bespoke `window.storage` API (get/set/delete, all async, backed by Anthropic's own
-// key-value service). Outside that sandbox there's no such API, so this module swaps in
-// `localStorage` as the backing store for a real, deployable app.
+// key-value service). This module backs that same API with a Supabase table
+// (`app_storage`, columns: key text primary key, value text) so data survives across
+// devices/browsers instead of living in one browser's localStorage.
 //
 // The async signatures are kept identical on purpose: every call site elsewhere in the
-// app (`await storage.get(...)`, `await storage.set(...)`) works unchanged whether the
-// underlying store is synchronous localStorage or a future real backend/API. If this app
-// ever grows a server, only this file needs to change.
+// app (`await storage.get(...)`, `await storage.set(...)`) works unchanged regardless of
+// the underlying store. If this app ever changes backends again, only this file needs to
+// change.
 
-const PREFIX = 'godesk:';
+import { supabase } from './supabaseClient';
 
-function keyFor(key) {
-  return PREFIX + key;
-}
+const TABLE = 'app_storage';
 
 export const storage = {
   async get(key) {
     try {
-      const raw = window.localStorage.getItem(keyFor(key));
-      if (raw === null) return null;
-      return { key, value: raw };
+      const { data, error } = await supabase.from(TABLE).select('value').eq('key', key).maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return { key, value: data.value };
     } catch (e) {
       console.error('storage.get error', e);
       return null;
@@ -30,7 +30,8 @@ export const storage = {
 
   async set(key, value) {
     try {
-      window.localStorage.setItem(keyFor(key), value);
+      const { error } = await supabase.from(TABLE).upsert({ key, value });
+      if (error) throw error;
       return { key, value };
     } catch (e) {
       console.error('storage.set error', e);
@@ -40,7 +41,8 @@ export const storage = {
 
   async delete(key) {
     try {
-      window.localStorage.removeItem(keyFor(key));
+      const { error } = await supabase.from(TABLE).delete().eq('key', key);
+      if (error) throw error;
       return { key, deleted: true };
     } catch (e) {
       console.error('storage.delete error', e);
@@ -50,15 +52,9 @@ export const storage = {
 
   async list(prefix = '') {
     try {
-      const keys = [];
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const k = window.localStorage.key(i);
-        if (k && k.startsWith(PREFIX)) {
-          const bare = k.slice(PREFIX.length);
-          if (bare.startsWith(prefix)) keys.push(bare);
-        }
-      }
-      return { keys };
+      const { data, error } = await supabase.from(TABLE).select('key').like('key', `${prefix}%`);
+      if (error) throw error;
+      return { keys: (data || []).map((row) => row.key) };
     } catch (e) {
       console.error('storage.list error', e);
       return null;
@@ -92,7 +88,7 @@ export async function saveJSON(key, value) {
 // ---------- photo storage ----------
 // Photos are stored one-per-key (item-photo:<id>) rather than inside the items blob, so a
 // large photo collection never bloats the payload every item list needs to load. Images
-// are downsized + re-encoded as JPEG before storage to keep localStorage usage sane.
+// are downsized + re-encoded as JPEG before storage to keep row size/network payload sane.
 
 export function resizeImageFile(file, maxDim = 640, quality = 0.82) {
   return new Promise((resolve, reject) => {

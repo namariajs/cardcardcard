@@ -42,11 +42,12 @@
 
   .lock-chip{
     display:flex; align-items:center; gap:10px;
-    font-size:14.5px; padding:9px 10px 9px 16px; border-radius:999px;
+    font-size:14.5px; padding:9px 10px 9px 16px; border-radius:18px;
     background:var(--pink-softer); border:1px solid var(--pink-light);
   }
-  .lock-chip.unlocked{ background:var(--sage-light); border-color:#CFE7D9; }
-  .lock-chip input{ width:68px; font-size:14px; padding:8px 10px; }
+  .lock-chip.unlocked{ border-radius:999px; background:var(--sage-light); border-color:#CFE7D9; }
+  .lock-chip .lock-fields{ display:flex; flex-direction:column; gap:4px; }
+  .lock-chip .lock-fields input{ width:140px; font-size:12.5px; padding:6px 10px; }
   .lock-chip .btn{ font-size:14px; padding:9px 18px; }
   .lock-chip #lockIcon{ font-size:16px; }
 

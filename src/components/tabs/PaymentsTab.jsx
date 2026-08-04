@@ -214,7 +214,12 @@ export default function PaymentsTab() {
         <div className="pay-card" style={{ position: 'sticky', bottom: 14, zIndex: 5 }}>
           <div className="pay-card-head">
             <h4>💸 Avisar pagamento em lote</h4>
-            <span>{selectedEntries.length} campos selecionados · Total: <b style={{ fontSize: 20, fontWeight: 700, color: 'var(--pink-deep)', fontFamily: "'Outfit',sans-serif" }}>{fmt(selectedTotal)}</b></span>
+            <span style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--pink-deep)', fontFamily: "'Outfit',sans-serif" }}>
+                Total: {fmt(selectedTotal)}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{selectedEntries.length} itens selecionados</div>
+            </span>
           </div>
           <div className="pay-form" style={{ marginLeft: 0 }}>
             <select value={batchMethod} onChange={(e) => setBatchMethod(e.target.value)}>

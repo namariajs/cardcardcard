@@ -17,7 +17,7 @@ export default function InterItemDetailModal({ item, onClose, onEdit }) {
           <div className="badges" style={{ marginTop: 8 }}>
             {item.category && item.category !== '-' && <span className="badge neutral">{statusLabel('category', item.category)}</span>}
             {item.grupo && item.grupo !== '-' && <span className="badge neutral">{item.grupo}</span>}
-            <span className="badge neutral">CEG: {statusLabel('statusCeg', item.statusCeg)}</span>
+            <span className="badge neutral">Status: {statusLabel('statusCeg', item.statusCeg)}</span>
             <span className="badge neutral">Envio: {statusLabel('statusEnvio', item.statusEnvio)}</span>
             {item.caixa && item.caixa !== '-' && <span className="badge neutral">📦 {item.caixa}</span>}
           </div>

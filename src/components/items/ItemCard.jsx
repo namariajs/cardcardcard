@@ -47,7 +47,7 @@ export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit,
         <ValueBoxes item={item} unclaimedView={unclaimedView} />
         {showJoinerBadge && item.unclaimed && (
           hasPendingOrder
-            ? <div className="meta-row" style={{ color: '#2F5C40' }}>🕓 Pedido enviado — aguardando aprovação</div>
+            ? <div className={`meta-row${unclaimedView ? ' order-pending-note' : ''}`} style={unclaimedView ? undefined : { color: '#2F5C40' }}>🕓 Pedido enviado — aguardando aprovação</div>
             : <button className={`btn btn-primary${unclaimedView ? ' btn-order-cta' : ''}`} style={{ marginTop: 8, width: '100%' }} onClick={() => setOrdering(true)}>📩 Pedir este item</button>
         )}
         {unlocked && (

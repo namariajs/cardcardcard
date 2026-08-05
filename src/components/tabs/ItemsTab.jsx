@@ -135,7 +135,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
         )}
       </div>
 
-      {unlocked && (
+      {unlocked && unclaimedOnly && (
         <div className="gom-claims-box">
           <h3>📩 Pedidos de itens disponíveis</h3>
           <p>{pendingOrders.length === 0 ? 'Nenhum pedido pendente no momento.' : 'Aprove para atribuir o item ao joiner, ou negue para mantê-lo disponível para outra pessoa.'}</p>

@@ -5,6 +5,7 @@ import { pendingClaims, pendingShippingRequests, arquivoReminders, pendingItemOr
 const TAB_DEFS = [
   { key: 'menu', icon: '🏠', label: 'Menu' },
   { key: 'mypanel', icon: '👤', label: 'Painel Joiner' },
+  { key: 'available', icon: '🟢', label: 'Disponíveis' },
   { key: 'payments', icon: '💳', label: 'Pagamentos' },
   { key: 'frete', icon: '🚚', label: 'Frete Nacional' },
   { key: 'items', icon: '📦', label: 'Itens' },

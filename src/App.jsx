@@ -48,6 +48,7 @@ export default function App() {
       <div className="main">
         {activeTab === 'menu' && <MenuTab />}
         {activeTab === 'mypanel' && <MyPanelTab />}
+        {activeTab === 'available' && <ItemsTab unclaimedOnly />}
         {activeTab === 'payments' && <PaymentsTab />}
         {activeTab === 'frete' && <FreteTab />}
         {activeTab === 'items' && (

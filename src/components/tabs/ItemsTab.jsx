@@ -18,10 +18,10 @@ import { PAYMENT_FIELDS } from '../../lib/constants';
 // handle since normHandle always prefixes those with '@'.
 const UNCLAIMED_FILTER = '__unclaimed__';
 
-export default function ItemsTab({ externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
+export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
   const { items, unlocked, removeItem, registry, itemOrders, approveItemOrder, denyItemOrder } = useApp();
   const [query, setQuery] = useState('');
-  const [joinerFilter, setJoinerFilter] = useState('');
+  const [joinerFilter, setJoinerFilter] = useState(unclaimedOnly ? UNCLAIMED_FILTER : '');
   const [caixaFilter, setCaixaFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [grupoFilter, setGrupoFilter] = useState('');
@@ -73,7 +73,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
     ...membros.map((m) => ({ value: m, label: m })),
   ], [membros]);
   const cegOptions = useMemo(() => [
-    { value: '', label: 'Todos os CEGs' },
+    { value: '', label: 'Todas as CEGs' },
     ...cegs.map((c) => ({ value: c, label: c })),
   ], [cegs]);
   const itemNameOptions = useMemo(() => [
@@ -110,20 +110,24 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
   return (
     <>
       <div className="toolbar">
-        <input type="search" placeholder="Buscar por joiner, item, CEG, ID..." style={{ minWidth: 220 }}
-          value={query} onChange={(e) => setQuery(e.target.value)} />
-        <StyledSelect value={joinerFilter} onChange={setJoinerFilter} options={joinerOptions} placeholder="Todos os joiners" />
-        <StyledSelect value={caixaFilter} onChange={setCaixaFilter} options={caixaOptions} placeholder="Todas as caixas" />
-        <StyledSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} placeholder="Todos os pagamentos" />
+        {!unclaimedOnly && (
+          <>
+            <input type="search" placeholder="Buscar por joiner, item, CEG, ID..." style={{ minWidth: 220 }}
+              value={query} onChange={(e) => setQuery(e.target.value)} />
+            <StyledSelect value={joinerFilter} onChange={setJoinerFilter} options={joinerOptions} placeholder="Todos os joiners" />
+            <StyledSelect value={caixaFilter} onChange={setCaixaFilter} options={caixaOptions} placeholder="Todas as caixas" />
+            <StyledSelect value={statusFilter} onChange={setStatusFilter} options={statusOptions} placeholder="Todos os pagamentos" />
+          </>
+        )}
         <StyledSelect value={grupoFilter} onChange={setGrupoFilter} options={grupoOptions} placeholder="Todos os grupos" />
         <StyledSelect value={membroFilter} onChange={setMembroFilter} options={membroOptions} placeholder="Todos os membros" />
-        <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todos os CEGs" />
+        <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todas as CEGs" />
         <StyledSelect value={itemNameFilter} onChange={setItemNameFilter} options={itemNameOptions} placeholder="Todos os sets/itens" />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
         </button>
-        {unlocked && (
+        {unlocked && !unclaimedOnly && (
           <>
             <button className="btn btn-ghost" onClick={() => setCreatingSet(true)}>🗂️ Novo Set</button>
             <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
@@ -131,7 +135,7 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
         )}
       </div>
 
-      {unlocked && (
+      {unlocked && !unclaimedOnly && (
         <div className="gom-claims-box">
           <h3>📩 Pedidos de itens disponíveis</h3>
           <p>{pendingOrders.length === 0 ? 'Nenhum pedido pendente no momento.' : 'Aprove para atribuir o item ao joiner, ou negue para mantê-lo disponível para outra pessoa.'}</p>
@@ -166,7 +170,9 @@ export default function ItemsTab({ externalQuery, onExternalQueryConsumed, exter
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState title="Nenhum item encontrado">Ajuste a busca ou os filtros, ou adicione um novo item.</EmptyState>
+        <EmptyState title={unclaimedOnly ? 'Nenhum item disponível' : 'Nenhum item encontrado'}>
+          {unclaimedOnly ? 'Ajuste os filtros ou volte mais tarde para ver novos itens disponíveis.' : 'Ajuste a busca ou os filtros, ou adicione um novo item.'}
+        </EmptyState>
       ) : viewMode === 'cards' ? (
         <div className="grid">
           {filtered.map((it) => (

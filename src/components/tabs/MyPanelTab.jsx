@@ -126,7 +126,7 @@ export default function MyPanelTab() {
             <EmptyState title="Nenhum item corresponde à busca">Ajuste os filtros acima.</EmptyState>
           ) : viewMode === 'cards' ? (
             <div className="grid">
-              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} maskPaidPrices onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
+              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>

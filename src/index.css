@@ -224,8 +224,7 @@
   }
   .val-box{ font-size:11px; text-align:center; }
   .val-box .lbl{ color:var(--ink-soft); display:block; margin-bottom:4px; white-space:nowrap; }
-  .val-box .amt-row{ display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:4px; }
-  .val-box .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; white-space:nowrap; }
+  .val-box .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; white-space:nowrap; display:block; margin-bottom:4px; }
   .val-box .late-fee-note{ display:block; margin-bottom:4px; }
   .val-box .badge{ white-space:nowrap; }
   .val-box-badge{ display:block; margin-top:4px; }

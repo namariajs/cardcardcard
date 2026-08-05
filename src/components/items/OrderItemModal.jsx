@@ -110,7 +110,7 @@ export default function OrderItemModal({ item, onClose }) {
 
       {step === 'done' && (
         <>
-          <p>✅ Pedido enviado! A GOM vai revisar e confirmar em breve.</p>
+          <div className="modal-success-msg">✅ Pedido enviado! A GOM irá entrar em contato via WhatsApp caso você tenha conseguido o item.</div>
           <div className="modal-actions">
             <button className="btn btn-primary" onClick={onClose}>Fechar</button>
           </div>

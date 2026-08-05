@@ -6,7 +6,7 @@ import PhotoThumb from '../shared/PhotoThumb';
 import ValueBoxes from '../shared/ValueBoxes';
 import OrderItemModal from './OrderItemModal';
 
-export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDuplicate }) {
+export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit, onDelete, onDuplicate }) {
   const { registry, unlocked, itemOrders } = useApp();
   const [ordering, setOrdering] = useState(false);
   const regMatch = showJoinerBadge ? findRegistryBySocial(registry, item.joiner) : null;
@@ -44,7 +44,7 @@ export default function ItemCard({ item, showJoinerBadge, onEdit, onDelete, onDu
           <span className="badge neutral">Envio: {statusLabel('statusEnvio', item.statusEnvio)}</span>
           {item.caixa && item.caixa !== '-' && <span className="badge neutral">📦 {item.caixa}</span>}
         </div>
-        <ValueBoxes item={item} />
+        <ValueBoxes item={item} unclaimedView={unclaimedView} />
         {showJoinerBadge && item.unclaimed && (
           hasPendingOrder
             ? <div className="meta-row" style={{ color: '#2F5C40' }}>🕓 Pedido enviado — aguardando aprovação</div>

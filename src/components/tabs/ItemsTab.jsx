@@ -176,7 +176,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
       ) : viewMode === 'cards' ? (
         <div className="grid">
           {filtered.map((it) => (
-            <ItemCard key={it.id} item={it} showJoinerBadge onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />
+            <ItemCard key={it.id} item={it} showJoinerBadge unclaimedView={unclaimedOnly} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />
           ))}
         </div>
       ) : (

@@ -2,22 +2,13 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput, findRegistryBySocial } from '../../lib/joiners';
 import { computePanelStats, itemMatchesPanelStatusFilter, PANEL_STATUS_FILTER_LABELS } from '../../lib/calc';
-import { fmt, itemDisplayTitle, statusLabel, isInterItem, hasVal } from '../../lib/format';
-import { PAYMENT_FIELDS } from '../../lib/constants';
+import { fmt, itemDisplayTitle, statusLabel, isInterItem } from '../../lib/format';
 import { deletePhoto } from '../../lib/storage';
 import ItemCard from '../items/ItemCard';
 import ItemModal from '../items/ItemModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import PaymentFieldCell from '../shared/PaymentFieldCell';
-
-// An item counts as fully paid when every payment field that actually carries a
-// nonzero value is marked PAGO — fields sitting at R$0,00 don't count against it.
-// Frete Inter/Taxa only enter the check for CEG Inter items.
-function isFullyPaid(it) {
-  const fields = isInterItem(it) ? PAYMENT_FIELDS : PAYMENT_FIELDS.filter((f) => f.key === 'item');
-  return fields.every((f) => !hasVal(it[f.valField]) || it[f.pagField] === 'PAGO');
-}
 
 export default function MyPanelTab() {
   const { items, registry, shippingRequests, unlocked, removeItem } = useApp();
@@ -27,7 +18,6 @@ export default function MyPanelTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cegFilter, setCegFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [showPaid, setShowPaid] = useState(false);
   const [editingId, setEditingId] = useState(undefined);
   const [deletingId, setDeletingId] = useState(null);
   const [duplicatingItem, setDuplicatingItem] = useState(null);
@@ -55,10 +45,9 @@ export default function MyPanelTab() {
       const matchQ = !q || [it.itemName, it.ceg, it.id, it.loja].join(' ').toLowerCase().includes(q);
       const matchCeg = !cegFilter || it.ceg === cegFilter;
       const matchStatus = itemMatchesPanelStatusFilter(it, statusFilter, handle, shippingRequests);
-      const matchPaid = showPaid || !isFullyPaid(it);
-      return matchQ && matchCeg && matchStatus && matchPaid;
+      return matchQ && matchCeg && matchStatus;
     });
-  }, [all, searchQuery, cegFilter, statusFilter, showPaid, handle, shippingRequests]);
+  }, [all, searchQuery, cegFilter, statusFilter, handle, shippingRequests]);
 
   async function handleDelete(id) {
     const it = items.find((i) => i.id === id);
@@ -123,20 +112,13 @@ export default function MyPanelTab() {
               <option value="">Todas as CEGs</option>
               {cegs.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <label className="toggle-switch-row">
-              <button type="button" className={`toggle-switch${showPaid ? ' on' : ''}`} role="switch" aria-checked={showPaid}
-                onClick={() => setShowPaid((v) => !v)}>
-                <span className="toggle-switch-knob" />
-              </button>
-              Mostrar itens pagos
-            </label>
           </div>
 
           {filtered.length === 0 ? (
             <EmptyState title="Nenhum item corresponde à busca">Ajuste os filtros acima.</EmptyState>
           ) : viewMode === 'cards' ? (
             <div className="grid">
-              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
+              {filtered.map((it) => <ItemCard key={it.id} item={it} showJoinerBadge={false} maskPaidPrices onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>

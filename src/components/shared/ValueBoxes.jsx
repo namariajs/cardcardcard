@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { fmt, hasVal, pagClass, isInterItem } from '../../lib/format';
 import { PAYMENT_FIELDS_BY_KEY } from '../../lib/constants';
 import { paymentFieldEffective } from '../../lib/calc';
 
-export default function ValueBoxes({ item, unclaimedView }) {
+export default function ValueBoxes({ item, unclaimedView, maskPaidPrices }) {
+  const [revealed, setRevealed] = useState(false);
   const boxes = [];
   if (hasVal(item.valorItem)) boxes.push({ label: 'Item', eff: paymentFieldEffective(item, PAYMENT_FIELDS_BY_KEY.item) });
   if (isInterItem(item)) {
@@ -19,13 +21,23 @@ export default function ValueBoxes({ item, unclaimedView }) {
     );
   }
 
+  // Fully paid means every field that's actually being charged (nonzero, hence in `boxes`) is PAGO.
+  const isFullyPaid = maskPaidPrices && boxes.every((b) => b.eff.status === 'PAGO');
+  const masked = isFullyPaid && !revealed;
+
   return (
     <div className="values" style={{ gridTemplateColumns: `repeat(${boxes.length},1fr)` }}>
       {boxes.map((b) => (
         <div className="val-box" key={b.label}>
           <span className="lbl">{b.label}</span>
-          <span className="amt">{fmt(b.eff.total)}</span>
-          {b.eff.fee > 0 && (
+          <span className="amt-row">
+            <span className="amt">{masked ? '••••••' : fmt(b.eff.total)}</span>
+            {isFullyPaid && (
+              <button type="button" className="price-eye-btn" title={revealed ? 'Ocultar valor' : 'Mostrar valor'}
+                onClick={() => setRevealed((v) => !v)}>👁</button>
+            )}
+          </span>
+          {!masked && b.eff.fee > 0 && (
             <span className="late-fee-note">
               + {fmt(b.eff.fee)} de atraso ({b.eff.lateDays} {b.eff.lateDays === 1 ? 'dia' : 'dias'})
             </span>

@@ -224,10 +224,17 @@
   }
   .val-box{ font-size:11px; text-align:center; }
   .val-box .lbl{ color:var(--ink-soft); display:block; margin-bottom:4px; white-space:nowrap; }
-  .val-box .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; white-space:nowrap; display:block; margin-bottom:4px; }
+  .val-box .amt-row{ display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:4px; }
+  .val-box .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; white-space:nowrap; }
   .val-box .late-fee-note{ display:block; margin-bottom:4px; }
   .val-box .badge{ white-space:nowrap; }
   .val-box-badge{ display:block; margin-top:4px; }
+
+  .price-eye-btn{
+    border:none; background:none; padding:0; cursor:pointer; font-size:12px; line-height:1;
+    color:var(--pink-deep); opacity:0.7; flex-shrink:0;
+  }
+  .price-eye-btn:hover{ opacity:1; }
 
   .late-fee-note{ font-size:10.5px; color:var(--pink-deep); }
 
@@ -292,18 +299,6 @@
 
   .panel-toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
   .panel-toolbar input, .panel-toolbar select{ min-width:180px; }
-
-  .toggle-switch-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); cursor:pointer; user-select:none; }
-  .toggle-switch{
-    position:relative; width:38px; height:22px; border-radius:999px; flex-shrink:0;
-    background:#D8D3DC; border:none; padding:0; cursor:pointer; transition:background .18s ease;
-  }
-  .toggle-switch.on{ background:var(--pink); }
-  .toggle-switch .toggle-switch-knob{
-    position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
-    background:#fff; box-shadow:var(--shadow-sm); transition:transform .18s ease;
-  }
-  .toggle-switch.on .toggle-switch-knob{ transform:translateX(16px); }
 
   .registry-toolbar{
     display:flex; flex-wrap:wrap; gap:10px; align-items:center;

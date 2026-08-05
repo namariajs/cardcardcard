@@ -22,6 +22,7 @@ const RETRY_DELAY_MS = 4000;
 //      single update is a bug, not a user action, and never gets written.
 export function usePersistedState(key, initialValue, migrate) {
   const [value, setValue] = useState(() => (typeof initialValue === 'function' ? initialValue() : initialValue));
+  const [loaded, setLoaded] = useState(false);
   const loadedRef = useRef(false);
   const prevValueRef = useRef(value);
 
@@ -37,6 +38,7 @@ export function usePersistedState(key, initialValue, migrate) {
         if (cancelled) return;
         setValue(data);
         loadedRef.current = true;
+        setLoaded(true);
       } catch (e) {
         if (cancelled) return;
         console.warn(`usePersistedState: failed to load "${key}", retrying in ${RETRY_DELAY_MS}ms`, e);
@@ -60,5 +62,5 @@ export function usePersistedState(key, initialValue, migrate) {
     saveJSON(key, value);
   }, [key, value]);
 
-  return [value, setValue];
+  return [value, setValue, loaded];
 }

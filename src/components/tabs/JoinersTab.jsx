@@ -5,7 +5,7 @@ import { fmt } from '../../lib/format';
 import EmptyState from '../shared/EmptyState';
 
 export default function JoinersTab({ onPickJoiner }) {
-  const { items, registry } = useApp();
+  const { items, registry, registryLoaded } = useApp();
 
   const entries = useMemo(() => {
     const map = {};
@@ -35,9 +35,9 @@ export default function JoinersTab({ onPickJoiner }) {
             <div className="joiner-handle">{handle}</div>
             {regMatch ? (
               <div className="joiner-sub">{regMatch.apelido}{regMatch.nomeCompleto ? ' — ' + regMatch.nomeCompleto : ''}</div>
-            ) : (
+            ) : registryLoaded ? (
               <div className="joiner-sub" style={{ color: 'var(--pink-deep)' }}>⚠ não cadastrado</div>
-            )}
+            ) : null}
             <div className="joiner-sub">{d.count} {d.count === 1 ? 'item' : 'itens'}</div>
             <div className="joiner-total">Total: {fmt(d.total)}</div>
             <div className="joiner-total" style={{ color: 'var(--pink-deep)' }}>Pendente: {fmt(d.pending)}</div>

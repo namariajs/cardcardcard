@@ -11,7 +11,7 @@ const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [items, setItems] = usePersistedState(STORAGE_KEYS.items, () => SEED_ITEMS.map((it) => ({ ...it })), migrateItems);
-  const [registry, setRegistry] = usePersistedState(STORAGE_KEYS.registry, []);
+  const [registry, setRegistry, registryLoaded] = usePersistedState(STORAGE_KEYS.registry, []);
   const [paymentClaims, setPaymentClaims] = usePersistedState(STORAGE_KEYS.paymentClaims, []);
   const [shippingRequests, setShippingRequests] = usePersistedState(STORAGE_KEYS.shippingRequests, [], migrateShippingRequests);
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
@@ -238,7 +238,7 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,
-    registry, setRegistry, upsertRegistryEntry, removeRegistryEntry,
+    registry, setRegistry, registryLoaded, upsertRegistryEntry, removeRegistryEntry,
     memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
     itemOrders, setItemOrders, submitItemOrder, approveItemOrder, denyItemOrder,
     paymentClaims, setPaymentClaims, submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim,
@@ -248,7 +248,7 @@ export function AppProvider({ children }) {
     unlocked, tryUnlock, lock,
     genId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, registry, memberRosters, itemOrders, paymentClaims, shippingRequests, interBoxes, unlocked]);
+  }), [items, registry, registryLoaded, memberRosters, itemOrders, paymentClaims, shippingRequests, interBoxes, unlocked]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

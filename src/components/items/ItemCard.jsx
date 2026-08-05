@@ -7,9 +7,12 @@ import ValueBoxes from '../shared/ValueBoxes';
 import OrderItemModal from './OrderItemModal';
 
 export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit, onDelete, onDuplicate }) {
-  const { registry, unlocked, itemOrders } = useApp();
+  const { registry, registryLoaded, unlocked, itemOrders } = useApp();
   const [ordering, setOrdering] = useState(false);
   const regMatch = showJoinerBadge ? findRegistryBySocial(registry, item.joiner) : null;
+  // Until the registry has actually finished its initial load, `regMatch` being empty just
+  // means "haven't checked yet", not "not registered" — don't flag a real joiner as unknown.
+  const knownUnregistered = registryLoaded && !regMatch;
   const hasPendingOrder = item.unclaimed && itemOrders.some((o) => o.itemId === item.id && o.status === 'PENDENTE');
 
   return (
@@ -25,7 +28,7 @@ export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit,
           {showJoinerBadge && (
             item.unclaimed
               ? <span className="item-joiner unclaimed">🟢 Disponível</span>
-              : <span className="item-joiner">{item.joiner}{regMatch ? '' : ' ⚠'}</span>
+              : <span className="item-joiner">{item.joiner}{knownUnregistered ? ' ⚠' : ''}</span>
           )}
         </div>
         {showJoinerBadge && !item.unclaimed && regMatch && (
@@ -33,7 +36,7 @@ export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit,
             <b>{regMatch.apelido}</b>{unlocked && regMatch.nomeCompleto ? ' — ' + regMatch.nomeCompleto : ''}
           </div>
         )}
-        {showJoinerBadge && !item.unclaimed && !regMatch && (
+        {showJoinerBadge && !item.unclaimed && knownUnregistered && (
           <div className="meta-row" style={{ marginTop: -4, color: 'var(--pink-deep)' }}>Joiner não cadastrado</div>
         )}
         <div className="meta-row"><b>Loja/POB:</b> {item.loja || '—'}</div>

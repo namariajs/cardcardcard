@@ -54,6 +54,9 @@ export function computeStats(items) {
   const total = items.length;
   let pendingValue = 0, confirmedValue = 0, lateValue = 0, lateCount = 0;
   items.forEach((it) => {
+    // Nobody has claimed this item yet, so nobody owes anything on it — it shouldn't
+    // count toward any payment total until a joiner actually claims it.
+    if (it.unclaimed) return;
     PAYMENT_FIELDS.forEach((f) => {
       const eff = paymentFieldEffective(it, f);
       if (eff.status === 'PENDENTE') pendingValue += eff.total;
@@ -74,16 +77,20 @@ export function computePanelStats(list, joinerHandle, shippingRequests) {
   let pendingValue = 0, paidValue = 0, lateValue = 0, lateCount = 0;
   let freteInterPending = 0, taxaPending = 0, freteNacPending = 0, releasedForShipping = 0, shipped = 0, delivered = 0;
   list.forEach((it) => {
-    PAYMENT_FIELDS.forEach((f) => {
-      const eff = paymentFieldEffective(it, f);
-      if (eff.status === 'PENDENTE') pendingValue += eff.total;
-      else if (eff.status === 'PAGO') paidValue += eff.total;
-      else if (eff.status === 'ATRASADO') { lateValue += eff.total; lateCount++; }
-    });
-    const freteEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.freteInter);
-    if (freteEff.status === 'PENDENTE' || freteEff.status === 'ATRASADO') freteInterPending += freteEff.total;
-    const taxaEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.taxa);
-    if (taxaEff.status === 'PENDENTE' || taxaEff.status === 'ATRASADO') taxaPending += taxaEff.total;
+    // Same rule as computeStats: an unclaimed item has no joiner on the hook for it yet,
+    // so it shouldn't contribute to any payment total.
+    if (!it.unclaimed) {
+      PAYMENT_FIELDS.forEach((f) => {
+        const eff = paymentFieldEffective(it, f);
+        if (eff.status === 'PENDENTE') pendingValue += eff.total;
+        else if (eff.status === 'PAGO') paidValue += eff.total;
+        else if (eff.status === 'ATRASADO') { lateValue += eff.total; lateCount++; }
+      });
+      const freteEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.freteInter);
+      if (freteEff.status === 'PENDENTE' || freteEff.status === 'ATRASADO') freteInterPending += freteEff.total;
+      const taxaEff = paymentFieldEffective(it, PAYMENT_FIELDS_BY_KEY.taxa);
+      if (taxaEff.status === 'PENDENTE' || taxaEff.status === 'ATRASADO') taxaPending += taxaEff.total;
+    }
     if (it.statusCeg === 'CHEGOU_GOM') releasedForShipping++;
     if (it.statusEnvio === 'ENVIADO') shipped++;
     if (it.statusEnvio === 'ENTREGUE') delivered++;
@@ -102,6 +109,7 @@ export function computePanelStats(list, joinerHandle, shippingRequests) {
 
 export function itemMatchesPanelStatusFilter(it, filter, joinerHandle, shippingRequests) {
   if (!filter) return true;
+  if (it.unclaimed) return false;
   if (filter === 'atrasado') {
     return PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === 'ATRASADO');
   }

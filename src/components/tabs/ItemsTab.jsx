@@ -25,9 +25,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const [caixaFilter, setCaixaFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [grupoFilter, setGrupoFilter] = useState('');
-  const [membroFilter, setMembroFilter] = useState('');
   const [cegFilter, setCegFilter] = useState('');
-  const [itemNameFilter, setItemNameFilter] = useState('');
   const [viewMode, setViewMode] = useState('cards');
   const [editingId, setEditingId] = useState(undefined); // undefined = closed, null = new item, string = edit
   const [deletingId, setDeletingId] = useState(null);
@@ -45,9 +43,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].filter(Boolean).sort(), [items]);
   const caixas = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
   const grupos = useMemo(() => [...new Set(items.map((i) => i.grupo).filter((g) => g && g !== '-'))].sort(), [items]);
-  const membros = useMemo(() => [...new Set(items.map((i) => i.membro).filter((m) => m && m !== '-'))].sort(), [items]);
   const cegs = useMemo(() => [...new Set(items.map((i) => i.ceg).filter((c) => c && c.trim()))].sort(), [items]);
-  const itemNames = useMemo(() => [...new Set(items.map((i) => i.itemName).filter(Boolean))].sort(), [items]);
 
   const joinerOptions = useMemo(() => [
     { value: '', label: 'Todos os joiners' },
@@ -68,18 +64,10 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
     { value: '', label: 'Todos os grupos' },
     ...grupos.map((g) => ({ value: g, label: g })),
   ], [grupos]);
-  const membroOptions = useMemo(() => [
-    { value: '', label: 'Todos os membros' },
-    ...membros.map((m) => ({ value: m, label: m })),
-  ], [membros]);
   const cegOptions = useMemo(() => [
     { value: '', label: 'Todas as CEGs' },
     ...cegs.map((c) => ({ value: c, label: c })),
   ], [cegs]);
-  const itemNameOptions = useMemo(() => [
-    { value: '', label: 'Todos os sets/itens' },
-    ...itemNames.map((n) => ({ value: n, label: n })),
-  ], [itemNames]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -89,12 +77,10 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
       const matchC = !caixaFilter || it.caixa === caixaFilter;
       const matchS = !statusFilter || PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === statusFilter);
       const matchG = !grupoFilter || it.grupo === grupoFilter;
-      const matchM = !membroFilter || it.membro === membroFilter;
       const matchCeg = !cegFilter || it.ceg === cegFilter;
-      const matchName = !itemNameFilter || it.itemName === itemNameFilter;
-      return matchQ && matchJ && matchC && matchS && matchG && matchM && matchCeg && matchName;
+      return matchQ && matchJ && matchC && matchS && matchG && matchCeg;
     });
-  }, [items, query, joinerFilter, caixaFilter, statusFilter, grupoFilter, membroFilter, cegFilter, itemNameFilter]);
+  }, [items, query, joinerFilter, caixaFilter, statusFilter, grupoFilter, cegFilter]);
 
   const pendingOrders = useMemo(
     () => pendingItemOrders(itemOrders).sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt)),
@@ -120,9 +106,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
           </>
         )}
         <StyledSelect value={grupoFilter} onChange={setGrupoFilter} options={grupoOptions} placeholder="Todos os grupos" />
-        <StyledSelect value={membroFilter} onChange={setMembroFilter} options={membroOptions} placeholder="Todos os membros" />
         <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todas as CEGs" />
-        <StyledSelect value={itemNameFilter} onChange={setItemNameFilter} options={itemNameOptions} placeholder="Todos os sets/itens" />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}

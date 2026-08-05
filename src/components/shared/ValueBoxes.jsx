@@ -11,22 +11,28 @@ export default function ValueBoxes({ item, unclaimedView }) {
   }
   if (boxes.length === 0) return null;
 
+  if (unclaimedView) {
+    return (
+      <div className="values-unclaimed">
+        {boxes.map((b) => <span className="price-hero" key={b.label}>{fmt(b.eff.total)}</span>)}
+      </div>
+    );
+  }
+
   return (
     <div className="values" style={{ gridTemplateColumns: `repeat(${boxes.length},1fr)` }}>
       {boxes.map((b) => (
         <div className="val-box" key={b.label}>
           <span className="lbl">{b.label}</span>
-          <span className={`amt${unclaimedView ? ' amt-lg' : ''}`}>{fmt(b.eff.total)}</span>
+          <span className="amt">{fmt(b.eff.total)}</span>
           {b.eff.fee > 0 && (
             <span className="late-fee-note">
               + {fmt(b.eff.fee)} de atraso ({b.eff.lateDays} {b.eff.lateDays === 1 ? 'dia' : 'dias'})
             </span>
           )}
-          {!unclaimedView && (
-            <span className="val-box-badge">
-              <span className={`badge ${pagClass(b.eff.status)}`}>{b.eff.status}</span>
-            </span>
-          )}
+          <span className="val-box-badge">
+            <span className={`badge ${pagClass(b.eff.status)}`}>{b.eff.status}</span>
+          </span>
         </div>
       ))}
     </div>

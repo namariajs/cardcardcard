@@ -4,6 +4,7 @@ import ItemCard from '../items/ItemCard';
 import ItemRow from '../items/ItemRow';
 import ItemModal from '../items/ItemModal';
 import SetModal from '../items/SetModal';
+import CategoriesModal from '../items/CategoriesModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import StyledSelect from '../shared/StyledSelect';
@@ -31,6 +32,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const [deletingId, setDeletingId] = useState(null);
   const [duplicatingItem, setDuplicatingItem] = useState(null);
   const [creatingSet, setCreatingSet] = useState(false);
+  const [managingCategories, setManagingCategories] = useState(false);
 
   useEffect(() => {
     if (externalQuery) { setQuery(externalQuery); onExternalQueryConsumed?.(); }
@@ -113,6 +115,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
         </button>
         {unlocked && !unclaimedOnly && (
           <>
+            <button className="btn btn-ghost" onClick={() => setManagingCategories(true)}>🏷️ Categorias</button>
             <button className="btn btn-ghost" onClick={() => setCreatingSet(true)}>🗂️ Novo Set</button>
             <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
           </>
@@ -179,6 +182,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}
       {duplicatingItem && <ItemModal itemId={null} duplicateFrom={duplicatingItem} onClose={() => setDuplicatingItem(null)} />}
       {creatingSet && <SetModal onClose={() => setCreatingSet(false)} />}
+      {managingCategories && <CategoriesModal onClose={() => setManagingCategories(false)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover item"

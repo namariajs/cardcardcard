@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { findRegistryBySocial } from '../../lib/joiners';
-import { itemDisplayTitle, statusLabel } from '../../lib/format';
+import { itemDisplayTitle, statusLabel, categoryLabel } from '../../lib/format';
 import PhotoThumb from '../shared/PhotoThumb';
 import ValueBoxes from '../shared/ValueBoxes';
 import OrderItemModal from './OrderItemModal';
 
 export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit, onDelete, onDuplicate }) {
-  const { registry, registryLoaded, unlocked, itemOrders } = useApp();
+  const { registry, registryLoaded, unlocked, itemOrders, itemCategories } = useApp();
   const [ordering, setOrdering] = useState(false);
   const regMatch = showJoinerBadge ? findRegistryBySocial(registry, item.joiner) : null;
   // Until the registry has actually finished its initial load, `regMatch` being empty just
@@ -41,7 +41,7 @@ export default function ItemCard({ item, showJoinerBadge, unclaimedView, onEdit,
         )}
         <div className="meta-row"><b>Loja/POB:</b> {item.loja || '—'}</div>
         <div className="badges">
-          {item.category && item.category !== '-' && <span className="badge neutral">{statusLabel('category', item.category)}</span>}
+          {item.category && item.category !== '-' && <span className="badge neutral">{categoryLabel(itemCategories, item.category)}</span>}
           {item.grupo && item.grupo !== '-' && <span className="badge neutral">{item.grupo}</span>}
           <span className="badge neutral">Status: {statusLabel('statusCeg', item.statusCeg)}</span>
           <span className="badge neutral">Envio: {statusLabel('statusEnvio', item.statusEnvio)}</span>

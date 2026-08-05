@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   interBoxes: 'gom-inter-boxes',
   memberRosters: 'gom-member-rosters',
   itemOrders: 'gom-item-orders',
+  itemCategories: 'gom-item-categories',
 };
 
 export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter'];
@@ -30,12 +31,14 @@ export const STATUS_ENVIO = {
   ENTREGUE: 'Entregue',
 };
 
-export const ITEM_CATEGORIES = {
-  '-': '—',
-  PHOTOCARD: 'Photocard',
-  MERCH: 'Merch',
-  ALBUM: 'Álbum',
-};
+// Item categories used to be this fixed map. They're now GOM-editable and persisted in
+// gom-item-categories (see AppContext), seeded from this list on first load so existing
+// items' stored category codes (PHOTOCARD/MERCH/ALBUM) keep resolving to the same labels.
+export const SEED_ITEM_CATEGORIES = [
+  { id: 'PHOTOCARD', label: 'Photocard' },
+  { id: 'MERCH', label: 'Merch' },
+  { id: 'ALBUM', label: 'Álbum' },
+];
 
 export const TIPO_LABELS = {
   CEG_INTER: 'CEG Inter',

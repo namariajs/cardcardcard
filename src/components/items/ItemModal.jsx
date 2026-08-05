@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
-import { genId } from '../../lib/format';
-import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES, PAG_OPTIONS, PAYMENT_FIELDS, BLANK_ITEM } from '../../lib/constants';
+import { genId, genCategoryId } from '../../lib/format';
+import { STATUS_CEG, STATUS_ENVIO, PAG_OPTIONS, PAYMENT_FIELDS, BLANK_ITEM } from '../../lib/constants';
 import { resizeImageFile, loadPhoto } from '../../lib/storage';
 import Modal from '../shared/Modal';
 import AutocompleteInput from '../shared/AutocompleteInput';
@@ -14,7 +14,7 @@ const BLANK = BLANK_ITEM;
 const DUPLICATE_FIELDS = ['itemName', 'category', 'grupo', 'membro', 'ceg', 'loja', 'tipo', 'statusCeg', 'valorItem'];
 
 export default function ItemModal({ itemId, duplicateFrom, onClose }) {
-  const { items, registry, upsertItem, setItemPhoto, clearItemPhoto } = useApp();
+  const { items, registry, itemCategories, upsertItemCategory, upsertItem, setItemPhoto, clearItemPhoto } = useApp();
   const existing = itemId ? items.find((i) => i.id === itemId) : null;
 
   const [form, setForm] = useState(() => {
@@ -29,6 +29,8 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoDraft, setPhotoDraft] = useState({ dataUrl: null, remove: false });
   const [trackMsg, setTrackMsg] = useState(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   useEffect(() => {
     if (existing?.hasPhoto) {
@@ -58,6 +60,16 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   const caixaOptions = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
 
   function set(field, value) { setForm((f) => ({ ...f, [field]: value })); }
+
+  function handleAddCategory() {
+    const label = newCategoryName.trim();
+    if (!label) return;
+    const id = genCategoryId();
+    upsertItemCategory({ id, label });
+    set('category', id);
+    setNewCategoryName('');
+    setAddingCategory(false);
+  }
 
   function handleJoinerBlur() {
     const r = resolveJoinerInput(registry, form.joiner);
@@ -173,9 +185,23 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
 
         <div className="field">
           <label>Categoria do item</label>
-          <select value={form.category} onChange={(e) => set('category', e.target.value)}>
-            {Object.entries(ITEM_CATEGORIES).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <select style={{ flex: 1 }} value={form.category} onChange={(e) => set('category', e.target.value)}>
+              <option value="-">—</option>
+              {itemCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <button type="button" className="btn btn-ghost" style={{ padding: '9px 12px' }}
+              title="Nova categoria" onClick={() => setAddingCategory((v) => !v)}>+</button>
+          </div>
+          {addingCategory && (
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <input type="text" placeholder="Nome da nova categoria" autoFocus style={{ flex: 1 }}
+                value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setAddingCategory(false); setNewCategoryName(''); } }} />
+              <button type="button" className="btn btn-sage" style={{ padding: '7px 12px' }} onClick={handleAddCategory}>✓</button>
+              <button type="button" className="btn btn-ghost" style={{ padding: '7px 12px' }} onClick={() => { setAddingCategory(false); setNewCategoryName(''); }}>✕</button>
+            </div>
+          )}
         </div>
 
         <div className="field">

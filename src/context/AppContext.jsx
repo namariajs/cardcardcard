@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
-import { STORAGE_KEYS, SEED_ITEMS, PAYMENT_FIELDS } from '../lib/constants';
+import { STORAGE_KEYS, SEED_ITEMS, SEED_ITEM_CATEGORIES, PAYMENT_FIELDS } from '../lib/constants';
 import { migrateItems, migrateShippingRequests, migrateInterBoxes } from '../lib/migrations';
 import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId, genRegId } from '../lib/format';
 import { findRegistryConflict } from '../lib/joiners';
@@ -17,6 +17,7 @@ export function AppProvider({ children }) {
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
   const [memberRosters, setMemberRosters] = usePersistedState(STORAGE_KEYS.memberRosters, []);
   const [itemOrders, setItemOrders] = usePersistedState(STORAGE_KEYS.itemOrders, []);
+  const [itemCategories, setItemCategories] = usePersistedState(STORAGE_KEYS.itemCategories, () => SEED_ITEM_CATEGORIES.map((c) => ({ ...c })));
 
   const [unlocked, setUnlocked] = useState(false);
 
@@ -56,6 +57,20 @@ export function AppProvider({ children }) {
   }
   function removeRegistryEntry(id) {
     setRegistry((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  // ---------- item categories ----------
+  function upsertItemCategory(entry) {
+    setItemCategories((prev) => {
+      const idx = prev.findIndex((c) => c.id === entry.id);
+      if (idx > -1) { const copy = [...prev]; copy[idx] = entry; return copy; }
+      return [...prev, entry];
+    });
+  }
+  // Items keep whatever category code they already had — deleting it here just means it
+  // no longer shows up as a pickable option going forward, not a cascade over existing items.
+  function removeItemCategory(id) {
+    setItemCategories((prev) => prev.filter((c) => c.id !== id));
   }
 
   // ---------- member rosters ----------
@@ -241,6 +256,7 @@ export function AppProvider({ children }) {
     registry, setRegistry, registryLoaded, upsertRegistryEntry, removeRegistryEntry,
     memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
     itemOrders, setItemOrders, submitItemOrder, approveItemOrder, denyItemOrder,
+    itemCategories, setItemCategories, upsertItemCategory, removeItemCategory,
     paymentClaims, setPaymentClaims, submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim,
     shippingRequests, setShippingRequests, createShippingRequest, updateShippingRequest, cancelShippingRequest,
     interBoxes, setInterBoxes, createInterBox, updateInterBox, deleteInterBox, addInterCategory, removeInterCategory, removeItemFromInterBox,
@@ -248,7 +264,7 @@ export function AppProvider({ children }) {
     unlocked, tryUnlock, lock,
     genId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, registry, registryLoaded, memberRosters, itemOrders, paymentClaims, shippingRequests, interBoxes, unlocked]);
+  }), [items, registry, registryLoaded, memberRosters, itemOrders, itemCategories, paymentClaims, shippingRequests, interBoxes, unlocked]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

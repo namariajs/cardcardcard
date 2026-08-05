@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { resolveJoinerInput } from '../../lib/joiners';
 import { genId, genRosterId } from '../../lib/format';
-import { ITEM_CATEGORIES, BLANK_ITEM } from '../../lib/constants';
+import { BLANK_ITEM } from '../../lib/constants';
 import Modal from '../shared/Modal';
 import AutocompleteInput from '../shared/AutocompleteInput';
 
@@ -11,7 +11,7 @@ function newMemberRow() {
 }
 
 export default function SetModal({ onClose }) {
-  const { items, registry, memberRosters, upsertItem, upsertMemberRoster, removeMemberRoster } = useApp();
+  const { items, registry, memberRosters, itemCategories, upsertItem, upsertMemberRoster, removeMemberRoster } = useApp();
 
   const [setName, setSetName] = useState('');
   const [ceg, setCeg] = useState('');
@@ -117,7 +117,8 @@ export default function SetModal({ onClose }) {
         <div className="field">
           <label>Categoria</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            {Object.entries(ITEM_CATEGORIES).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+            <option value="-">—</option>
+            {itemCategories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
         </div>
         <div className="field">

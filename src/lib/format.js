@@ -1,4 +1,4 @@
-import { STATUS_CEG, STATUS_ENVIO, ITEM_CATEGORIES } from './constants';
+import { STATUS_CEG, STATUS_ENVIO } from './constants';
 
 export const fmt = (n) => 'R$ ' + (Number(n) || 0).toFixed(2).replace('.', ',');
 
@@ -11,6 +11,7 @@ export const genInterBoxId = () => 'IBOX-' + Math.random().toString(36).slice(2,
 export const genInterCatId = () => 'ICAT-' + Math.random().toString(36).slice(2, 6).toUpperCase();
 export const genRosterId = () => 'ROS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genOrderId = () => 'ORD-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+export const genCategoryId = () => 'CAT-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 
 export const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
 
@@ -43,9 +44,19 @@ export function formatPhoneBR(value) {
 }
 
 export function statusLabel(key, val) {
-  const maps = { statusCeg: STATUS_CEG, statusEnvio: STATUS_ENVIO, category: ITEM_CATEGORIES };
+  const maps = { statusCeg: STATUS_CEG, statusEnvio: STATUS_ENVIO };
   if (maps[key] && maps[key][val]) return maps[key][val];
   if (!val || val === '-') return '—';
+  return val.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Categories are GOM-editable (unlike statusLabel's fixed maps), so the label lookup needs
+// the live `itemCategories` list rather than a static map — falls back to a title-cased
+// version of the stored code if the category was since renamed/deleted.
+export function categoryLabel(categories, val) {
+  if (!val || val === '-') return '—';
+  const found = (categories || []).find((c) => c.id === val);
+  if (found) return found.label;
   return val.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

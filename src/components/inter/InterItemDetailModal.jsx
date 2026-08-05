@@ -1,9 +1,11 @@
-import { statusLabel, itemDisplayTitle } from '../../lib/format';
+import { useApp } from '../../context/AppContext';
+import { statusLabel, categoryLabel, itemDisplayTitle } from '../../lib/format';
 import PhotoThumb from '../shared/PhotoThumb';
 import ValueBoxes from '../shared/ValueBoxes';
 import Modal from '../shared/Modal';
 
 export default function InterItemDetailModal({ item, onClose, onEdit }) {
+  const { itemCategories } = useApp();
   return (
     <Modal onClose={onClose} maxWidth={480}>
       <h3>{itemDisplayTitle(item)}</h3>
@@ -15,7 +17,7 @@ export default function InterItemDetailModal({ item, onClose, onEdit }) {
           <div className="meta-row"><b>CEG:</b> {item.ceg || '—'}</div>
           <div className="meta-row"><b>Loja/POB:</b> {item.loja || '—'}</div>
           <div className="badges" style={{ marginTop: 8 }}>
-            {item.category && item.category !== '-' && <span className="badge neutral">{statusLabel('category', item.category)}</span>}
+            {item.category && item.category !== '-' && <span className="badge neutral">{categoryLabel(itemCategories, item.category)}</span>}
             {item.grupo && item.grupo !== '-' && <span className="badge neutral">{item.grupo}</span>}
             <span className="badge neutral">Status: {statusLabel('statusCeg', item.statusCeg)}</span>
             <span className="badge neutral">Envio: {statusLabel('statusEnvio', item.statusEnvio)}</span>

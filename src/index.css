@@ -293,6 +293,7 @@
   .psum-value.late{ color:#8A5A16; }
   .psum-value.danger{ color:#C0392B; }
   .psum-value.pending{ color:var(--orange); }
+  .psum-value-row{ display:flex; align-items:center; gap:4px; }
   .psum-box.psum-clickable{ cursor:pointer; transition:transform .12s ease, box-shadow .12s ease; }
   .psum-box.psum-clickable:hover{ transform:translateY(-2px); box-shadow:var(--shadow-sm); }
   .psum-box.psum-active{ outline:2px solid var(--pink); outline-offset:-2px; }

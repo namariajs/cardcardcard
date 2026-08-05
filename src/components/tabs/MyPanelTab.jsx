@@ -18,6 +18,7 @@ export default function MyPanelTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cegFilter, setCegFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [paidTotalRevealed, setPaidTotalRevealed] = useState(false);
   const [editingId, setEditingId] = useState(undefined);
   const [deletingId, setDeletingId] = useState(null);
   const [duplicatingItem, setDuplicatingItem] = useState(null);
@@ -28,10 +29,10 @@ export default function MyPanelTab() {
     const resolved = resolveJoinerInput(registry, raw);
     if (!resolved.value) return;
     setHandle(resolved.value);
-    setSearchQuery(''); setCegFilter(''); setStatusFilter('');
+    setSearchQuery(''); setCegFilter(''); setStatusFilter(''); setPaidTotalRevealed(false);
   }
   function clearLookup() {
-    setHandle(''); setInputDraft(''); setSearchQuery(''); setCegFilter(''); setStatusFilter('');
+    setHandle(''); setInputDraft(''); setSearchQuery(''); setCegFilter(''); setStatusFilter(''); setPaidTotalRevealed(false);
   }
 
   const all = useMemo(() => (handle ? items.filter((it) => it.joiner.toLowerCase() === handle.toLowerCase()) : []), [items, handle]);
@@ -80,7 +81,14 @@ export default function MyPanelTab() {
             </div>
             <div className="panel-summary-grid">
               <div className="psum-box"><div className="psum-label">Total de itens</div><div className="psum-value">{stats.total}</div></div>
-              <div className="psum-box"><div className="psum-label">Pago</div><div className="psum-value ok">{fmt(stats.paidValue)}</div></div>
+              <div className="psum-box">
+                <div className="psum-label">Pago</div>
+                <div className="psum-value-row">
+                  <span className="psum-value ok">{paidTotalRevealed ? fmt(stats.paidValue) : '••••••'}</span>
+                  <button type="button" className="price-eye-btn" title={paidTotalRevealed ? 'Ocultar valor' : 'Mostrar valor'}
+                    onClick={() => setPaidTotalRevealed((v) => !v)}>👁</button>
+                </div>
+              </div>
               <PsumClickable active={statusFilter === 'atrasado'} onClick={() => setStatusFilter(statusFilter === 'atrasado' ? '' : 'atrasado')}
                 label="Atrasado" valueClass="danger" value={`${stats.lateCount} — ${fmt(stats.lateValue)}`} />
               <PsumClickable active={statusFilter === 'freteInter'} onClick={() => setStatusFilter(statusFilter === 'freteInter' ? '' : 'freteInter')}

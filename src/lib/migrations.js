@@ -20,6 +20,11 @@ export function migrateItems(list) {
     if (it.pagFreteInterPaidAt === undefined) it.pagFreteInterPaidAt = null;
     if (it.pagTaxaPaidAt === undefined) it.pagTaxaPaidAt = null;
     if (it.unclaimed === undefined) it.unclaimed = false;
+    // One-time backfill: before ItemModal enforced "no joiner ⟺ unclaimed", items saved
+    // with a blank joiner (or the old '@sem-nome' placeholder) ended up neither claimed
+    // nor flagged unclaimed — showing a broken "Joiner não cadastrado" instead of
+    // "Disponível" and never appearing in the Disponíveis tab.
+    if (!it.unclaimed && (!it.joiner || it.joiner === '@sem-nome')) it.unclaimed = true;
     // ATRASADO is no longer a manually stored status for these 3 fields — normalize any
     // legacy value back to PENDENTE; lateness is now derived from prazo/paidAt instead.
     if (it.pagItem === 'ATRASADO') it.pagItem = 'PENDENTE';

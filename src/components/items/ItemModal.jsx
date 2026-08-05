@@ -109,12 +109,10 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
     const hasJoiner = !!joinerResolved.value;
     const newItem = {
       ...form,
-      // A real joiner assigned now always clears unclaimed; leaving the joiner blank keeps
-      // whatever unclaimed already was — true stays true (still up for grabs), and normal
-      // items with no joiner keep the long-standing '@sem-nome' placeholder instead of
-      // silently becoming "unclaimed".
-      joiner: hasJoiner ? joinerResolved.value : (form.unclaimed ? '' : '@sem-nome'),
-      unclaimed: hasJoiner ? false : !!form.unclaimed,
+      // "No joiner" and "unclaimed/disponível" are always the same thing — a blank joiner
+      // always means unclaimed, and assigning a real joiner always clears it.
+      joiner: hasJoiner ? joinerResolved.value : '',
+      unclaimed: !hasJoiner,
       itemName: (form.itemName || '').trim() || 'Item sem nome',
       grupo: (form.grupo || '').trim() || '-',
       membro: (form.membro || '').trim() || '-',

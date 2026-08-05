@@ -31,6 +31,7 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   const [trackMsg, setTrackMsg] = useState(null);
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [quantity, setQuantity] = useState('1');
 
   useEffect(() => {
     if (existing?.hasPhoto) {
@@ -107,7 +108,7 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
   async function handleSave() {
     const joinerResolved = resolveJoinerInput(registry, form.joiner);
     const hasJoiner = !!joinerResolved.value;
-    const newItem = {
+    const base = {
       ...form,
       // "No joiner" and "unclaimed/disponível" are always the same thing — a blank joiner
       // always means unclaimed, and assigning a real joiner always clears it.
@@ -133,33 +134,48 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
     // there instead of continuing to grow — stamp it on the PENDENTE→PAGO transition and
     // clear it if a field is reverted back to PENDENTE.
     PAYMENT_FIELDS.forEach((f) => {
-      if (newItem[f.pagField] === 'PAGO') {
-        if (!existing || existing[f.pagField] !== 'PAGO') newItem[f.paidAtField] = new Date().toISOString();
+      if (base[f.pagField] === 'PAGO') {
+        if (!existing || existing[f.pagField] !== 'PAGO') base[f.paidAtField] = new Date().toISOString();
       } else {
-        newItem[f.paidAtField] = null;
+        base[f.paidAtField] = null;
       }
     });
 
-    if (photoDraft.dataUrl) {
-      await setItemPhoto(newItem.id, photoDraft.dataUrl);
-      newItem.hasPhoto = true;
-    } else if (photoDraft.remove) {
-      await clearItemPhoto(newItem.id);
-      newItem.hasPhoto = false;
+    // Quantity only applies to fresh items (add or duplicate) — editing an existing one
+    // always saves exactly that one item, keeping its own id.
+    const count = existing ? 1 : Math.max(1, parseInt(quantity, 10) || 1);
+    const ids = count > 1 ? Array.from({ length: count }, () => genId()) : [base.id];
+
+    for (const id of ids) {
+      const newItem = { ...base, id };
+      if (photoDraft.dataUrl) {
+        await setItemPhoto(id, photoDraft.dataUrl);
+        newItem.hasPhoto = true;
+      } else if (photoDraft.remove) {
+        await clearItemPhoto(id);
+        newItem.hasPhoto = false;
+      }
+      upsertItem(newItem);
     }
 
-    upsertItem(newItem);
     onClose();
   }
 
   const showInterFields = form.tipo === 'CEG_INTER';
   const showCaixaHint = form.statusCeg === 'CAMINHO_BRASIL';
+  const qtyToCreate = existing ? 1 : Math.max(1, parseInt(quantity, 10) || 1);
 
   return (
     <Modal onClose={onClose}>
       <h3>{itemId ? 'Editar item' : duplicateFrom ? 'Duplicar item' : 'Adicionar item'}</h3>
-      <p className="hint">ID: <span className="mono">{form.id}</span></p>
+      <p className="hint">{qtyToCreate > 1 ? `${qtyToCreate} IDs serão gerados automaticamente` : <>ID: <span className="mono">{form.id}</span></>}</p>
       <div className="form-grid">
+        {!existing && (
+          <div className="field">
+            <label>Quantidade</label>
+            <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          </div>
+        )}
         <div className="field full">
           <label>Foto do item</label>
           <div className="photo-upload-row">
@@ -318,7 +334,9 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={handleSave}>{itemId ? 'Salvar alterações' : 'Adicionar item'}</button>
+        <button className="btn btn-primary" onClick={handleSave}>
+          {itemId ? 'Salvar alterações' : qtyToCreate > 1 ? `Adicionar ${qtyToCreate} itens` : 'Adicionar item'}
+        </button>
       </div>
     </Modal>
   );

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../lib/supabaseClient';
 import { genRegId } from '../../lib/format';
 import Modal from '../shared/Modal';
 import EmptyState from '../shared/EmptyState';
 
 export default function ImportJoinersFromItemsModal({ onClose }) {
-  const { items, registry, upsertRegistryEntry } = useApp();
+  const { items, registry, createRegistryEntry } = useApp();
 
   // Same distinct-handle logic as the "Joiners c/ Itens" stat (computeStats.joinerCount)
   // — every @ that has actually claimed something, whether or not they were ever
@@ -40,10 +41,21 @@ export default function ImportJoinersFromItemsModal({ onClose }) {
     setImporting(true);
     let imported = 0;
     const failed = [];
+    const alreadyExisted = [];
     for (const handle of toImport) {
+      // Re-check the live table right before inserting, not just the possibly-stale
+      // `registry` this review list was built from (e.g. still loading when the
+      // modal opened, or another session registered this handle moments ago).
+      // Skipping cleanly here is better than relying solely on the unique
+      // lower(social) index to reject it as a raw "duplicate key" error.
+      const { data: existingRows, error: checkError } = await supabase.from('cadastro').select('id').ilike('social', handle).limit(1);
+      if (checkError) { failed.push({ handle, message: checkError.message }); continue; }
+      if (existingRows && existingRows.length > 0) { alreadyExisted.push(handle); continue; }
+
       // Handle stands in for both fields — there's no real nickname to import, and
-      // fabricating a phone number would be worse than leaving it blank.
-      const { error } = await upsertRegistryEntry({
+      // fabricating a phone number would be worse than leaving it blank. createRegistryEntry
+      // is a plain insert (never upsert), so it can only ever add a row, never overwrite one.
+      const { error } = await createRegistryEntry({
         id: genRegId(), apelido: handle, nomeCompleto: '', phone: '', social: handle, source: 'import_items',
       });
       // Keep the real Supabase error text, not just a generic "failed" flag — a
@@ -54,7 +66,7 @@ export default function ImportJoinersFromItemsModal({ onClose }) {
       else imported++;
     }
     setImporting(false);
-    setResult({ imported, failed });
+    setResult({ imported, failed, alreadyExisted });
   }
 
   if (result) {
@@ -64,6 +76,9 @@ export default function ImportJoinersFromItemsModal({ onClose }) {
         <div className="modal-success-msg">
           {result.imported} {result.imported === 1 ? 'joiner importado' : 'joiners importados'} para o Cadastro.
         </div>
+        {result.alreadyExisted.length > 0 && (
+          <p className="hint">Já estavam cadastrados (não duplicados): {result.alreadyExisted.join(', ')}</p>
+        )}
         {result.failed.length > 0 && (
           <div style={{ fontSize: 11.5, color: 'var(--pink-deep)' }}>
             Falharam ao salvar:

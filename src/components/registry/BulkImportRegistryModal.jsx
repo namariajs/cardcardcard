@@ -13,7 +13,7 @@ function parseLine(line) {
 }
 
 export default function BulkImportRegistryModal({ onClose }) {
-  const { upsertRegistryEntry } = useApp();
+  const { createRegistryEntry } = useApp();
   const [text, setText] = useState('');
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
@@ -29,7 +29,7 @@ export default function BulkImportRegistryModal({ onClose }) {
     for (const line of lines) {
       const parsed = parseLine(line);
       if (!parsed) { skippedLines.push(line); continue; }
-      const { error } = await upsertRegistryEntry({ id: genRegId(), apelido: parsed.apelido, nomeCompleto: '', phone: '', social: parsed.social });
+      const { error } = await createRegistryEntry({ id: genRegId(), apelido: parsed.apelido, nomeCompleto: '', phone: '', social: parsed.social });
       if (error) failedLines.push(line);
       else imported++;
     }

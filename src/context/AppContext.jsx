@@ -15,8 +15,15 @@ import { supabase } from '../lib/supabaseClient';
 function cadastroRowToEntry(row) {
   return { id: row.id, apelido: row.apelido, nomeCompleto: row.nome_completo || '', phone: row.phone || '', social: row.social, source: row.source || null };
 }
+// `source` is omitted entirely when not set, rather than always sent as null — every
+// write path except the items-import feature never sets it, and unconditionally
+// including the key broke ALL of them (not just that feature) for as long as the
+// migration adding the column hadn't been applied yet: PostgREST rejects an insert
+// naming a column it doesn't know about regardless of the value.
 function entryToCadastroRow(entry) {
-  return { id: entry.id, apelido: entry.apelido, nome_completo: entry.nomeCompleto || '', phone: entry.phone || '', social: entry.social, source: entry.source || null };
+  const row = { id: entry.id, apelido: entry.apelido, nome_completo: entry.nomeCompleto || '', phone: entry.phone || '', social: entry.social };
+  if (entry.source) row.source = entry.source;
+  return row;
 }
 
 const AppContext = createContext(null);
@@ -64,6 +71,17 @@ export function AppProvider({ children }) {
   // ---------- registry (cadastro table) ----------
   // Returns { error } (see useSupabaseTable) — callers should await this and alert
   // on failure rather than assuming the write succeeded.
+  //
+  // Two entry points, deliberately not one: createRegistryEntry (plain .insert(),
+  // for a brand-new person — RegistryModal's "add" case, bulk import, the
+  // items-import feature, order approval) can only ever add a row, never touch an
+  // existing one, even if something upstream is wrong about a handle being new.
+  // upsertRegistryEntry stays reserved for RegistryModal's "edit" case, where the
+  // id is already known to belong to a specific existing row the GOM opened on
+  // purpose.
+  function createRegistryEntry(entry) {
+    return cadastroActions.insertRow(entryToCadastroRow(entry));
+  }
   function upsertRegistryEntry(entry) {
     return cadastroActions.upsertRow(entryToCadastroRow(entry));
   }
@@ -128,7 +146,7 @@ export function AppProvider({ children }) {
         resolvedHandle = conflict.social;
       } else {
         resolvedHandle = pc.social;
-        upsertRegistryEntry({ id: genRegId(), apelido: pc.apelido, nomeCompleto: pc.nomeCompleto || '', phone: pc.phone || '', social: pc.social });
+        createRegistryEntry({ id: genRegId(), apelido: pc.apelido, nomeCompleto: pc.nomeCompleto || '', phone: pc.phone || '', social: pc.social });
       }
     }
     if (resolvedHandle) {
@@ -273,7 +291,7 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,
-    registry, registryLoaded, upsertRegistryEntry, removeRegistryEntry,
+    registry, registryLoaded, createRegistryEntry, upsertRegistryEntry, removeRegistryEntry,
     members, upsertMember, removeMember,
     memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
     itemOrders, setItemOrders, submitItemOrder, approveItemOrder, denyItemOrder,

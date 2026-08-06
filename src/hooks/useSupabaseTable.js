@@ -56,6 +56,20 @@ export function useSupabaseTable(table, { orderBy = 'created_at', ascending = tr
     return { error };
   }
 
+  // For creating a brand-new row where the caller has no reason to ever touch an
+  // existing one — a plain .insert() rather than .upsert(). If the generated id (or a
+  // unique column, e.g. cadastro's lower(social) index) ever collided with an existing
+  // row, this errors loudly instead of an upsert silently merging over it.
+  async function insertRow(row) {
+    setRows((prev) => [...prev, row]);
+    const { error } = await supabase.from(table).insert(row);
+    if (error) {
+      console.error(`useSupabaseTable: insert into "${table}" failed`, error);
+      setRows((prev) => prev.filter((r) => r.id !== row.id));
+    }
+    return { error };
+  }
+
   async function removeRow(id) {
     let previous;
     setRows((prev) => { previous = prev; return prev.filter((r) => r.id !== id); });
@@ -67,5 +81,5 @@ export function useSupabaseTable(table, { orderBy = 'created_at', ascending = tr
     return { error };
   }
 
-  return [rows, loaded, { upsertRow, removeRow }];
+  return [rows, loaded, { upsertRow, insertRow, removeRow }];
 }

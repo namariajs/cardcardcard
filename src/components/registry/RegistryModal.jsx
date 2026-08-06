@@ -7,7 +7,7 @@ import Modal from '../shared/Modal';
 const BLANK = { apelido: '', nomeCompleto: '', phone: '', social: '' };
 
 export default function RegistryModal({ entryId, onClose }) {
-  const { registry, upsertRegistryEntry } = useApp();
+  const { registry, createRegistryEntry, upsertRegistryEntry } = useApp();
   const existing = entryId ? registry.find((r) => r.id === entryId) : null;
   const [form, setForm] = useState(() => (existing ? { ...existing } : { ...BLANK, id: genRegId() }));
   const [saving, setSaving] = useState(false);
@@ -40,7 +40,10 @@ export default function RegistryModal({ entryId, onClose }) {
     }
 
     setSaving(true);
-    const { error } = await upsertRegistryEntry({ id: form.id, apelido, nomeCompleto, phone, social });
+    // entryId set = editing a row we already know exists (upsert is fine/intended);
+    // no entryId = a brand-new person, so this can only ever insert, never overwrite.
+    const save = entryId ? upsertRegistryEntry : createRegistryEntry;
+    const { error } = await save({ id: form.id, apelido, nomeCompleto, phone, social });
     setSaving(false);
     if (error) { alert('Não foi possível salvar o cadastro — a gravação falhou. Verifique sua conexão e tente novamente.'); return; }
     onClose();

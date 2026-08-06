@@ -75,6 +75,9 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
                 ))}
               </div>
             )}
+            {search.trim() && results.length === 0 && !identity.cadastroId && (
+              <div className="hint" style={{ marginTop: 6, marginBottom: 0 }}>Nenhum cadastro encontrado com esse @ ou telefone. Clique em "Não tenho cadastro" abaixo para se cadastrar.</div>
+            )}
             {identity.cadastroId && <div className="meta-row" style={{ marginTop: 6, color: '#2F5C40' }}>✓ Selecionado: <b>{identity.matchedCadastro?.apelido}</b></div>}
           </div>
           <button type="button" className="btn btn-ghost" onClick={switchToNew}>Não tenho cadastro</button>

@@ -15,26 +15,33 @@ function parseLine(line) {
 export default function BulkImportRegistryModal({ onClose }) {
   const { upsertRegistryEntry } = useApp();
   const [text, setText] = useState('');
+  const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
 
-  function handleImport() {
+  async function handleImport() {
     const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     let imported = 0;
     const skippedLines = [];
-    lines.forEach((line) => {
+    const failedLines = [];
+    setImporting(true);
+    // Sequential, not Promise.all — each write goes through the same optimistic
+    // local-state update, so awaiting one at a time avoids racing overlapping updates.
+    for (const line of lines) {
       const parsed = parseLine(line);
-      if (!parsed) { skippedLines.push(line); return; }
-      upsertRegistryEntry({ id: genRegId(), apelido: parsed.apelido, nomeCompleto: '', phone: '', social: parsed.social });
-      imported++;
-    });
-    setResult({ imported, skippedLines });
+      if (!parsed) { skippedLines.push(line); continue; }
+      const { error } = await upsertRegistryEntry({ id: genRegId(), apelido: parsed.apelido, nomeCompleto: '', phone: '', social: parsed.social });
+      if (error) failedLines.push(line);
+      else imported++;
+    }
+    setImporting(false);
+    setResult({ imported, skippedLines, failedLines });
   }
 
-  const summary = result && (
-    result.skippedLines.length === 0
-      ? `${result.imported} ${result.imported === 1 ? 'joiner importado' : 'joiners importados'}.`
-      : `${result.imported} ${result.imported === 1 ? 'joiner importado' : 'joiners importados'}, ${result.skippedLines.length} ${result.skippedLines.length === 1 ? 'linha ignorada' : 'linhas ignoradas'}.`
-  );
+  const summaryParts = result && [
+    `${result.imported} ${result.imported === 1 ? 'joiner importado' : 'joiners importados'}`,
+    result.skippedLines.length > 0 ? `${result.skippedLines.length} ${result.skippedLines.length === 1 ? 'linha ignorada' : 'linhas ignoradas'}` : null,
+    result.failedLines.length > 0 ? `${result.failedLines.length} ${result.failedLines.length === 1 ? 'linha falhou ao salvar' : 'linhas falharam ao salvar'}` : null,
+  ].filter(Boolean).join(', ') + '.';
 
   return (
     <Modal onClose={onClose}>
@@ -48,18 +55,26 @@ export default function BulkImportRegistryModal({ onClose }) {
             placeholder={'Han, @hanjirxse\nJinret, @nekkomimo'}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            disabled={!!result}
+            disabled={!!result || importing}
           />
         </div>
       </div>
       {result && (
         <div className="lock-note" style={{ marginTop: 4, flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-          <span>{summary}</span>
+          <span>{summaryParts}</span>
           {result.skippedLines.length > 0 && (
             <div style={{ fontSize: 11.5 }}>
               Linhas ignoradas (faltando apelido ou @ válido):
               <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                 {result.skippedLines.map((line, i) => <li key={i} className="mono">{line}</li>)}
+              </ul>
+            </div>
+          )}
+          {result.failedLines.length > 0 && (
+            <div style={{ fontSize: 11.5, color: 'var(--pink-deep)' }}>
+              Falharam ao salvar (erro de conexão/gravação — tente importar essas linhas novamente):
+              <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                {result.failedLines.map((line, i) => <li key={i} className="mono">{line}</li>)}
               </ul>
             </div>
           )}
@@ -70,8 +85,8 @@ export default function BulkImportRegistryModal({ onClose }) {
           <button className="btn btn-primary" onClick={onClose}>Fechar</button>
         ) : (
           <>
-            <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn-primary" onClick={handleImport} disabled={!text.trim()}>Importar</button>
+            <button className="btn btn-ghost" onClick={onClose} disabled={importing}>Cancelar</button>
+            <button className="btn btn-primary" onClick={handleImport} disabled={!text.trim() || importing}>{importing ? 'Importando...' : 'Importar'}</button>
           </>
         )}
       </div>

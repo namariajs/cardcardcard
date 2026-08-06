@@ -62,19 +62,21 @@ export function AppProvider({ children }) {
   }
 
   // ---------- registry (cadastro table) ----------
+  // Returns { error } (see useSupabaseTable) — callers should await this and alert
+  // on failure rather than assuming the write succeeded.
   function upsertRegistryEntry(entry) {
-    cadastroActions.upsertRow(entryToCadastroRow(entry));
+    return cadastroActions.upsertRow(entryToCadastroRow(entry));
   }
   function removeRegistryEntry(id) {
-    cadastroActions.removeRow(id);
+    return cadastroActions.removeRow(id);
   }
 
   // ---------- members (shared option source for Formulários) ----------
   function upsertMember(member) {
-    membersActions.upsertRow(member);
+    return membersActions.upsertRow(member);
   }
   function removeMember(id) {
-    membersActions.removeRow(id);
+    return membersActions.removeRow(id);
   }
 
   // ---------- item categories ----------

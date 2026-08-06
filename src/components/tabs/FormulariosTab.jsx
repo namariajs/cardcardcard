@@ -69,21 +69,23 @@ export default function FormulariosTab() {
       {!loaded ? null : forms.length === 0 ? (
         <EmptyState title="Nenhum formulário criado">Clique em "Novo formulário" para começar sua primeira campanha de claim/compra.</EmptyState>
       ) : (
-        <div className="registry-grid">
+        <div className="grid">
           {forms.map((f) => {
             const count = f.form_submissions?.[0]?.count ?? 0;
             const isClosed = f.status === 'closed';
             const pastDeadline = f.deadline && new Date(f.deadline) < new Date();
             return (
               <div className="reg-card" key={f.id}>
-                <div className="reg-name">{f.title}</div>
-                <span className={`badge ${isClosed ? 'neutral' : pastDeadline ? 'atrasado' : 'pago'}`} style={{ marginBottom: 6 }}>
-                  {isClosed ? '🔒 Encerrado' : pastDeadline ? '⏰ Prazo encerrado' : '🟢 Aberto'}
-                </span>
+                <div className="item-top">
+                  <div className="reg-name">{f.title}</div>
+                  <span className={`badge ${isClosed ? 'neutral' : pastDeadline ? 'atrasado' : 'pago'}`}>
+                    {isClosed ? '🔒 Encerrado' : pastDeadline ? '⏰ Prazo encerrado' : '🟢 Aberto'}
+                  </span>
+                </div>
                 <div className="reg-row"><b>Prazo:</b> {f.deadline ? formatDateOnly(f.deadline) : '—'}</div>
                 <div className="reg-row"><b>Respostas:</b> {count}</div>
                 <div className="reg-row mono" style={{ fontSize: 11.5, wordBreak: 'break-all' }}>{publicUrl(f.slug)}</div>
-                <div className="reg-actions">
+                <div className="card-actions">
                   <button className="btn btn-ghost" onClick={() => handleCopy(f)}>{copiedId === f.id ? '✓ Copiado' : '🔗 Copiar link'}</button>
                   <button className="btn btn-ghost" onClick={() => setViewingId(f.id)}>📋 Respostas</button>
                   <button className="btn btn-ghost" onClick={() => setWizardFormId(f.id)}>✎ Editar</button>

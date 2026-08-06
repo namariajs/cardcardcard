@@ -10,6 +10,7 @@ export default function RegistryModal({ entryId, onClose }) {
   const { registry, upsertRegistryEntry } = useApp();
   const existing = entryId ? registry.find((r) => r.id === entryId) : null;
   const [form, setForm] = useState(() => (existing ? { ...existing } : { ...BLANK, id: genRegId() }));
+  const [saving, setSaving] = useState(false);
 
   function set(field, value) { setForm((f) => ({ ...f, [field]: value })); }
 
@@ -17,7 +18,7 @@ export default function RegistryModal({ entryId, onClose }) {
     set('phone', formatPhoneBR(e.target.value));
   }
 
-  function handleSave() {
+  async function handleSave() {
     const apelido = form.apelido.trim();
     const social = normHandle(form.social.trim());
     const nomeCompleto = form.nomeCompleto.trim();
@@ -38,7 +39,10 @@ export default function RegistryModal({ entryId, onClose }) {
       return;
     }
 
-    upsertRegistryEntry({ id: form.id, apelido, nomeCompleto, phone, social });
+    setSaving(true);
+    const { error } = await upsertRegistryEntry({ id: form.id, apelido, nomeCompleto, phone, social });
+    setSaving(false);
+    if (error) { alert('Não foi possível salvar o cadastro — a gravação falhou. Verifique sua conexão e tente novamente.'); return; }
     onClose();
   }
 
@@ -54,7 +58,7 @@ export default function RegistryModal({ entryId, onClose }) {
       </div>
       <div className="modal-actions">
         <button className="btn btn-ghost" onClick={onClose}>Cancelar</button>
-        <button className="btn btn-primary" onClick={handleSave}>{entryId ? 'Salvar alterações' : 'Cadastrar'}</button>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : entryId ? 'Salvar alterações' : 'Cadastrar'}</button>
       </div>
     </Modal>
   );

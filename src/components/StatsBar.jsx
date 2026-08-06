@@ -39,7 +39,10 @@ export default function StatsBar({ onFilterByCeg, onGoToItems }) {
             <div className="stat"><div className="stat-label">Atrasado</div><div className="stat-value" style={{ color: '#8A5A16' }}>{fmt(s.lateValue)}</div></div>
           </>
         )}
-        <div className="stat"><div className="stat-label">Joiners</div><div className="stat-value">{s.joinerCount}</div></div>
+        <div className="stat" title="Quantidade de @ diferentes com itens reivindicados — não é o mesmo total do Cadastro, que só conta joiners formalmente cadastrados.">
+          <div className="stat-label">Joiners c/ Itens</div>
+          <div className="stat-value">{s.joinerCount}</div>
+        </div>
         <div className="stat"><div className="stat-label">Última atualização</div><div className="stat-value" style={{ fontSize: 16 }}>{lastUpdated ? formatLastUpdated(lastUpdated) : '—'}</div></div>
       </div>
       {showCegModal && (

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { useSupabaseTable } from '../hooks/useSupabaseTable';
 import { STORAGE_KEYS, SEED_ITEMS, SEED_ITEM_CATEGORIES, PAYMENT_FIELDS } from '../lib/constants';
 import { migrateItems, migrateShippingRequests, migrateInterBoxes } from '../lib/migrations';
 import { genId, genPayId, genBatchId, genShipId, genInterBoxId, genInterCatId, genRegId } from '../lib/format';
@@ -7,11 +8,24 @@ import { findRegistryConflict } from '../lib/joiners';
 import { savePhoto, deletePhoto, deleteReceipt } from '../lib/storage';
 import { supabase } from '../lib/supabaseClient';
 
+// cadastro's DB columns use snake_case (nome_completo); every other layer of
+// the app (RegistryModal, joiners.js, ItemModal, ...) has always worked with
+// the camelCase shape below, so the mapping lives here rather than rippling
+// through every consumer.
+function cadastroRowToEntry(row) {
+  return { id: row.id, apelido: row.apelido, nomeCompleto: row.nome_completo || '', phone: row.phone || '', social: row.social };
+}
+function entryToCadastroRow(entry) {
+  return { id: entry.id, apelido: entry.apelido, nome_completo: entry.nomeCompleto || '', phone: entry.phone || '', social: entry.social };
+}
+
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [items, setItems] = usePersistedState(STORAGE_KEYS.items, () => SEED_ITEMS.map((it) => ({ ...it })), migrateItems);
-  const [registry, setRegistry, registryLoaded] = usePersistedState(STORAGE_KEYS.registry, []);
+  const [cadastroRows, registryLoaded, cadastroActions] = useSupabaseTable('cadastro');
+  const registry = useMemo(() => cadastroRows.map(cadastroRowToEntry), [cadastroRows]);
+  const [members, , membersActions] = useSupabaseTable('members', { orderBy: 'name' });
   const [paymentClaims, setPaymentClaims] = usePersistedState(STORAGE_KEYS.paymentClaims, []);
   const [shippingRequests, setShippingRequests] = usePersistedState(STORAGE_KEYS.shippingRequests, [], migrateShippingRequests);
   const [interBoxes, setInterBoxes] = usePersistedState(STORAGE_KEYS.interBoxes, [], migrateInterBoxes);
@@ -47,16 +61,20 @@ export function AppProvider({ children }) {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
-  // ---------- registry ----------
+  // ---------- registry (cadastro table) ----------
   function upsertRegistryEntry(entry) {
-    setRegistry((prev) => {
-      const idx = prev.findIndex((r) => r.id === entry.id);
-      if (idx > -1) { const copy = [...prev]; copy[idx] = entry; return copy; }
-      return [...prev, entry];
-    });
+    cadastroActions.upsertRow(entryToCadastroRow(entry));
   }
   function removeRegistryEntry(id) {
-    setRegistry((prev) => prev.filter((r) => r.id !== id));
+    cadastroActions.removeRow(id);
+  }
+
+  // ---------- members (shared option source for Formulários) ----------
+  function upsertMember(member) {
+    membersActions.upsertRow(member);
+  }
+  function removeMember(id) {
+    membersActions.removeRow(id);
   }
 
   // ---------- item categories ----------
@@ -253,7 +271,8 @@ export function AppProvider({ children }) {
 
   const value = useMemo(() => ({
     items, setItems, upsertItem, removeItem,
-    registry, setRegistry, registryLoaded, upsertRegistryEntry, removeRegistryEntry,
+    registry, registryLoaded, upsertRegistryEntry, removeRegistryEntry,
+    members, upsertMember, removeMember,
     memberRosters, setMemberRosters, upsertMemberRoster, removeMemberRoster,
     itemOrders, setItemOrders, submitItemOrder, approveItemOrder, denyItemOrder,
     itemCategories, setItemCategories, upsertItemCategory, removeItemCategory,
@@ -264,7 +283,7 @@ export function AppProvider({ children }) {
     unlocked, tryUnlock, lock,
     genId,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, registry, registryLoaded, memberRosters, itemOrders, itemCategories, paymentClaims, shippingRequests, interBoxes, unlocked]);
+  }), [items, registry, registryLoaded, members, memberRosters, itemOrders, itemCategories, paymentClaims, shippingRequests, interBoxes, unlocked]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

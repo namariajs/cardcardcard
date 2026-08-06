@@ -476,6 +476,23 @@
   }
   .empty b{ display:block; font-family:'Outfit',sans-serif; font-size:17px; color:var(--ink); margin-bottom:6px; }
 
+  /* ---------- PUBLIC FORM PAGE (/f/:slug) ---------- */
+  .public-form-page{
+    min-height:100vh; padding:32px 16px 60px;
+    display:flex; justify-content:center;
+  }
+  .public-form-card{
+    width:100%; max-width:640px;
+    background:var(--card); border:1px solid var(--border); border-radius:22px;
+    padding:28px; box-shadow:var(--shadow);
+  }
+  .form-section h3{ font-family:'Outfit',sans-serif; margin:0 0 4px; font-size:19px; color:var(--pink-deep); }
+  .form-section > p.hint{ font-size:12.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .public-rules{
+    background:var(--pink-softer); border:1px solid var(--pink-light); border-radius:14px;
+    padding:14px 16px; margin:10px 0; font-size:13px; color:var(--ink); white-space:pre-wrap; line-height:1.6;
+  }
+
   footer{ text-align:center; padding:28px; font-size:12px; color:var(--ink-soft); }
 
   @media (max-width:640px){

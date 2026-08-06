@@ -12,6 +12,7 @@ const TAB_DEFS = [
   { key: 'inter', icon: '🌍', label: 'Inter' },
   { key: 'joiners', icon: '💌', label: 'Joiners' },
   { key: 'registry', icon: '🗂', label: 'Cadastro' },
+  { key: 'formularios', icon: '📝', label: 'Formulários' },
   { key: 'arquivo', icon: '📁', label: 'Arquivo' },
 ];
 

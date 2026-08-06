@@ -175,3 +175,32 @@ export async function loadReceipt(claimId) {
 export async function deleteReceipt(claimId) {
   try { await storage.delete('payment-receipt:' + claimId); } catch (e) { /* ignore */ }
 }
+
+// ---------- form uploads (item photos + payment receipts) ----------
+// Unlike item photos/receipts above (base64-in-table, since those are
+// GOM-managed and small in number), Formulários uploads go through a real
+// Supabase Storage bucket ("form-uploads") — anon visitors submit these
+// directly, and photo_url/receipt_file_url are meant to be plain public URLs
+// the /f/:slug page can render without any authenticated fetch.
+export async function uploadFormUpload(file) {
+  try {
+    const isImage = file.type.startsWith('image/');
+    let blob = file;
+    let contentType = file.type;
+    let ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+    if (isImage) {
+      const dataUrl = await resizeImageFile(file);
+      blob = await (await fetch(dataUrl)).blob();
+      contentType = 'image/jpeg';
+      ext = 'jpg';
+    }
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabase.storage.from('form-uploads').upload(path, blob, { contentType });
+    if (error) throw error;
+    const { data } = supabase.storage.from('form-uploads').getPublicUrl(path);
+    return data.publicUrl;
+  } catch (e) {
+    console.error('uploadFormUpload error', e);
+    return null;
+  }
+}

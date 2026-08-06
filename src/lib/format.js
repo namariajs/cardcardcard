@@ -12,6 +12,11 @@ export const genInterCatId = () => 'ICAT-' + Math.random().toString(36).slice(2,
 export const genRosterId = () => 'ROS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genOrderId = () => 'ORD-' + Math.random().toString(36).slice(2, 8).toUpperCase();
 export const genCategoryId = () => 'CAT-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+export const genMemberId = () => 'MBR-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+
+// Lowercase (unlike the other gen*Id helpers) since this one ends up in a
+// public URL (/f/:slug) rather than shown as an internal record id.
+export const genFormSlug = () => Math.random().toString(36).slice(2, 10);
 
 export const onlyDigits = (s) => String(s || '').replace(/\D/g, '');
 

@@ -13,6 +13,7 @@ import ItemsTab from './components/tabs/ItemsTab';
 import InterTab from './components/tabs/InterTab';
 import JoinersTab from './components/tabs/JoinersTab';
 import RegistryTab from './components/tabs/RegistryTab';
+import FormulariosTab from './components/tabs/FormulariosTab';
 import ArquivoTab from './components/tabs/ArquivoTab';
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
         {activeTab === 'inter' && <InterTab />}
         {activeTab === 'joiners' && <JoinersTab onPickJoiner={goToItemsWithJoiner} />}
         {activeTab === 'registry' && <RegistryTab />}
+        {activeTab === 'formularios' && <FormulariosTab />}
         {activeTab === 'arquivo' && <ArquivoTab />}
       </div>
 

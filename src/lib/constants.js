@@ -9,7 +9,7 @@ export const STORAGE_KEYS = {
   itemCategories: 'gom-item-categories',
 };
 
-export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter'];
+export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter', 'formularios'];
 
 export const STATUS_CEG = {
   '-': '—',

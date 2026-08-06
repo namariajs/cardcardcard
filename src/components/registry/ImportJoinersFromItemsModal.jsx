@@ -46,7 +46,11 @@ export default function ImportJoinersFromItemsModal({ onClose }) {
       const { error } = await upsertRegistryEntry({
         id: genRegId(), apelido: handle, nomeCompleto: '', phone: '', social: handle, source: 'import_items',
       });
-      if (error) failed.push(handle);
+      // Keep the real Supabase error text, not just a generic "failed" flag — a
+      // blanket 100%-failure with no visible cause (e.g. a migration that hasn't
+      // been run yet, adding a column this insert now sends) is exactly what's
+      // impossible to self-diagnose without this.
+      if (error) failed.push({ handle, message: error.message || String(error) });
       else imported++;
     }
     setImporting(false);
@@ -61,8 +65,11 @@ export default function ImportJoinersFromItemsModal({ onClose }) {
           {result.imported} {result.imported === 1 ? 'joiner importado' : 'joiners importados'} para o Cadastro.
         </div>
         {result.failed.length > 0 && (
-          <div className="hint" style={{ color: 'var(--pink-deep)' }}>
-            Falharam ao salvar (tente novamente): {result.failed.join(', ')}
+          <div style={{ fontSize: 11.5, color: 'var(--pink-deep)' }}>
+            Falharam ao salvar:
+            <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+              {result.failed.map((f, i) => <li key={i}><span className="mono">{f.handle}</span> — {f.message}</li>)}
+            </ul>
           </div>
         )}
         <div className="modal-actions">

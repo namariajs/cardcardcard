@@ -13,10 +13,10 @@ import { supabase } from '../lib/supabaseClient';
 // the camelCase shape below, so the mapping lives here rather than rippling
 // through every consumer.
 function cadastroRowToEntry(row) {
-  return { id: row.id, apelido: row.apelido, nomeCompleto: row.nome_completo || '', phone: row.phone || '', social: row.social };
+  return { id: row.id, apelido: row.apelido, nomeCompleto: row.nome_completo || '', phone: row.phone || '', social: row.social, source: row.source || null };
 }
 function entryToCadastroRow(entry) {
-  return { id: entry.id, apelido: entry.apelido, nome_completo: entry.nomeCompleto || '', phone: entry.phone || '', social: entry.social };
+  return { id: entry.id, apelido: entry.apelido, nome_completo: entry.nomeCompleto || '', phone: entry.phone || '', social: entry.social, source: entry.source || null };
 }
 
 const AppContext = createContext(null);

@@ -15,14 +15,19 @@ export default function FormulariosTab() {
   const [viewingId, setViewingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [pendingCounts, setPendingCounts] = useState({}); // form_id -> count of processing_status='pending' submissions
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('forms')
-      .select('*, form_submissions(count)')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { data: pendingRows, error: pendingError }] = await Promise.all([
+      supabase.from('forms').select('*, form_submissions(count)').order('created_at', { ascending: false }),
+      supabase.from('form_submissions').select('form_id').eq('processing_status', 'pending'),
+    ]);
     if (error) { console.error('FormulariosTab: failed to load forms', error); return; }
+    if (pendingError) console.error('FormulariosTab: failed to load pending submission counts', pendingError);
     setForms(data || []);
+    const counts = {};
+    (pendingRows || []).forEach((r) => { counts[r.form_id] = (counts[r.form_id] || 0) + 1; });
+    setPendingCounts(counts);
     setLoaded(true);
   }, []);
 
@@ -87,7 +92,9 @@ export default function FormulariosTab() {
                 <div className="reg-row mono" style={{ fontSize: 11.5, wordBreak: 'break-all' }}>{publicUrl(f.slug)}</div>
                 <div className="card-actions">
                   <button className="btn btn-ghost" onClick={() => handleCopy(f)}>{copiedId === f.id ? '✓ Copiado' : '🔗 Copiar link'}</button>
-                  <button className="btn btn-ghost" onClick={() => setViewingId(f.id)}>📋 Respostas</button>
+                  <button className="btn btn-ghost" onClick={() => setViewingId(f.id)}>
+                    📋 Respostas{pendingCounts[f.id] > 0 && <span className="tab-badge">{pendingCounts[f.id]}</span>}
+                  </button>
                   <button className="btn btn-ghost" onClick={() => setWizardFormId(f.id)}>✎ Editar</button>
                   <button className="btn btn-danger" onClick={() => setDeletingId(f.id)}>🗑 Remover</button>
                 </div>

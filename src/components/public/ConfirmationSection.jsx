@@ -12,12 +12,11 @@ export default function ConfirmationSection({ form, joinedGroup, setJoinedGroup,
   return (
     <div className="form-section">
       <h3>Quase lá!</h3>
-      {form.thank_you_text && <p className="hint">{form.thank_you_text}</p>}
 
       {form.join_group_link && (
-        <p>
-          <a href={form.join_group_link} target="_blank" rel="noopener noreferrer">🔗 Entrar no grupo</a>
-        </p>
+        <a href={form.join_group_link} target="_blank" rel="noopener noreferrer" className="btn btn-sage" style={{ width: '100%', justifyContent: 'center', marginBottom: 16 }}>
+          🔗 Entrar no grupo
+        </a>
       )}
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>

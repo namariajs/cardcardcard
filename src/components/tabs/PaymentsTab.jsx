@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../lib/supabaseClient';
 import { resolveJoinerInput } from '../../lib/joiners';
 import { pendingClaims, claimFor, paymentFieldVisibleForStage, paymentFieldEffective } from '../../lib/calc';
-import { fmt, itemDisplayTitle, formatClaimDate, hasVal } from '../../lib/format';
-import { PAYMENT_FIELDS } from '../../lib/constants';
+import { fmt, itemDisplayTitle, formatClaimDate, hasVal, genId } from '../../lib/format';
+import { PAYMENT_FIELDS, BLANK_ITEM } from '../../lib/constants';
 import { saveReceipt, readFileAsDataURL, resizeImageFile } from '../../lib/storage';
 import PayFieldRow from '../shared/PayFieldRow';
 import ReceiptModal from '../shared/ReceiptModal';
@@ -11,7 +12,7 @@ import ConfirmModal from '../shared/ConfirmModal';
 
 export default function PaymentsTab() {
   const {
-    items, unlocked, registry, paymentClaims, shippingRequests,
+    items, unlocked, registry, paymentClaims, shippingRequests, upsertItem,
     submitPaymentClaim, submitBatchPaymentClaim, cancelPaymentClaim, confirmPaymentClaim, confirmBatchPaymentClaim, cancelShippingRequest,
   } = useApp();
   const [handle, setHandle] = useState('');
@@ -23,6 +24,95 @@ export default function PaymentsTab() {
   const [batchNote, setBatchNote] = useState('');
   const [batchFile, setBatchFile] = useState(null);
   const [batchSubmitting, setBatchSubmitting] = useState(false);
+  const [pendingSubmissions, setPendingSubmissions] = useState([]);
+  const [processingSubmissionIds, setProcessingSubmissionIds] = useState(new Set());
+
+  const loadPendingSubmissions = useCallback(async () => {
+    if (!unlocked) return;
+    const { data, error } = await supabase
+      .from('form_submissions')
+      .select(`
+        *,
+        forms ( id, title ),
+        cadastro:cadastro_id ( apelido, nome_completo, phone, social ),
+        form_submission_items (
+          quantity,
+          form_items ( id, name, price ),
+          form_item_options ( member_id, members ( name ) )
+        )
+      `)
+      .eq('processing_status', 'pending')
+      .order('created_at', { ascending: true });
+    if (error) { console.error('PaymentsTab: failed to load pending form submissions', error); return; }
+    setPendingSubmissions(data || []);
+  }, [unlocked]);
+
+  useEffect(() => { loadPendingSubmissions(); }, [loadPendingSubmissions]);
+
+  function submissionItemsSummary(submission) {
+    return (submission.form_submission_items || [])
+      .map((si) => {
+        const name = si.form_items?.name || '—';
+        const optionName = si.form_item_options?.members?.name;
+        return `${optionName ? `${optionName} — ${name}` : name} x${si.quantity || 1}`;
+      })
+      .join('; ');
+  }
+
+  // The update's WHERE clause (processing_status still 'pending') is the idempotency
+  // guard, not a separate read-then-write check — Postgres only lets one such update
+  // actually match a row, so a double-click or two overlapping approval attempts can
+  // never both pass this and create two sets of items for the same submission.
+  async function handleApproveSubmission(submission) {
+    setProcessingSubmissionIds((prev) => new Set(prev).add(submission.id));
+    try {
+      const { data: claimed, error: claimError } = await supabase
+        .from('form_submissions')
+        .update({ processing_status: 'approved' })
+        .eq('id', submission.id)
+        .eq('processing_status', 'pending')
+        .select();
+      if (claimError) { alert('Não foi possível aprovar esta resposta.'); console.error(claimError); return; }
+      if (!claimed || claimed.length === 0) { await loadPendingSubmissions(); return; }
+
+      const joinerHandle = submission.cadastro?.social || '';
+      const paidAt = new Date().toISOString();
+      (submission.form_submission_items || []).forEach((si) => {
+        const qty = si.quantity || 1;
+        for (let i = 0; i < qty; i++) {
+          upsertItem({
+            ...BLANK_ITEM,
+            id: genId(),
+            joiner: joinerHandle,
+            unclaimed: !joinerHandle,
+            itemName: si.form_items?.name || 'Item sem nome',
+            membro: si.form_item_options?.members?.name || '-',
+            valorItem: Number(si.form_items?.price) || 0,
+            tipo: 'VENDA',
+            pagItem: 'PAGO',
+            pagItemPaidAt: paidAt,
+            ceg: submission.forms?.title || '',
+            notes: `Formulário: ${submission.forms?.title || ''}`,
+            formSubmissionId: submission.id,
+          });
+        }
+      });
+      await loadPendingSubmissions();
+    } finally {
+      setProcessingSubmissionIds((prev) => { const next = new Set(prev); next.delete(submission.id); return next; });
+    }
+  }
+
+  async function handleRejectSubmission(submission) {
+    setProcessingSubmissionIds((prev) => new Set(prev).add(submission.id));
+    try {
+      const { error } = await supabase.from('form_submissions').update({ processing_status: 'rejected' }).eq('id', submission.id).eq('processing_status', 'pending');
+      if (error) { alert('Não foi possível rejeitar esta resposta.'); console.error(error); }
+      await loadPendingSubmissions();
+    } finally {
+      setProcessingSubmissionIds((prev) => { const next = new Set(prev); next.delete(submission.id); return next; });
+    }
+  }
 
   const claims = useMemo(() => pendingClaims(paymentClaims), [paymentClaims]);
   const groupedClaims = useMemo(() => {
@@ -107,6 +197,34 @@ export default function PaymentsTab() {
 
   return (
     <>
+      {unlocked && pendingSubmissions.length > 0 && (
+        <div className="gom-claims-box">
+          <h3>📝 Respostas de formulário aguardando aprovação</h3>
+          <p>Aprovar cria os itens automaticamente (já marcados como pagos); rejeitar não cria nada.</p>
+          {pendingSubmissions.map((s) => {
+            const isProcessing = processingSubmissionIds.has(s.id);
+            return (
+              <div className="claim-row" key={s.id}>
+                <div className="claim-info">
+                  <b>{s.forms?.title || '(formulário removido)'}</b><br />
+                  {s.cadastro?.apelido || '—'}{s.cadastro?.nome_completo ? ' — ' + s.cadastro.nome_completo : ''}
+                  {s.cadastro?.phone ? ' · ' + s.cadastro.phone : ''}{s.cadastro?.social ? ' · ' + s.cadastro.social : ''}
+                  <br />{submissionItemsSummary(s)}
+                  <br />Total: <b>{fmt(s.amount_paid)}</b> · {s.payment_method === 'pix' ? 'Pix' : 'Cartão'} · Enviado em {formatClaimDate(s.created_at)}
+                  {s.comments && <><br />Obs.: {s.comments}</>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {s.receipt_file_url && <a className="btn btn-outline" href={s.receipt_file_url} target="_blank" rel="noopener noreferrer">📎 Ver comprovante</a>}
+                  {s.receipt_drive_link && <a className="btn btn-outline" href={s.receipt_drive_link} target="_blank" rel="noopener noreferrer">🔗 Link Drive</a>}
+                  <button className="btn btn-danger" disabled={isProcessing} onClick={() => handleRejectSubmission(s)}>✕ Rejeitar</button>
+                  <button className="btn btn-sage" disabled={isProcessing} onClick={() => handleApproveSubmission(s)}>✔ Aprovar</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {unlocked && (
         <div className="gom-claims-box">
           <h3>🔔 Pagamentos aguardando verificação</h3>

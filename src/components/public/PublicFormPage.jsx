@@ -162,10 +162,10 @@ export default function PublicFormPage() {
           <ConfirmationSection form={form} joinedGroup={joinedGroup} setJoinedGroup={setJoinedGroup} onSubmit={handleFinalSubmit} onBack={() => setStep('payment')} submitting={submitting} />
         )}
         {step === 'success' && (
-          <div className="form-section" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 6 }}>🎉</div>
-            <h3>Formulário enviado!</h3>
-            {form.thank_you_text && <p className="hint">{form.thank_you_text}</p>}
+          <div className="form-section" style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: 72, marginBottom: 14 }}>🎉</div>
+            <h3 style={{ fontSize: 28, marginBottom: 10 }}>Formulário enviado!</h3>
+            {form.thank_you_text && <p style={{ fontSize: 15.5, color: 'var(--ink)', maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>{form.thank_you_text}</p>}
           </div>
         )}
         {submitError && <p className="hint" style={{ color: 'var(--pink-deep)', textAlign: 'center' }}>{submitError}</p>}

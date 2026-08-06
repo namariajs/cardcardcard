@@ -44,11 +44,11 @@ export default function ItemsSection({ formItems, selections, setSelections, onN
         {formItems.map((item) => {
           const sel = selections[item.id] || {};
           return (
-            <div className="item-card" key={item.id}>
+            <div className="item-card public-item-card" key={item.id}>
               {item.photo_url ? (
-                <img src={item.photo_url} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'contain', borderRadius: 10, marginBottom: 8 }} />
+                <img src={item.photo_url} alt="" className="public-item-photo" />
               ) : (
-                <div className="photo-preview" style={{ width: '100%', height: 130 }}><span>🖼️</span></div>
+                <div className="public-item-photo-placeholder"><span>🖼️</span></div>
               )}
               <div className="item-content">
                 <div className="item-name">{item.name}</div>

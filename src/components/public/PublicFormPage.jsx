@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { findRegistryConflict } from '../../lib/joiners';
@@ -11,7 +11,7 @@ import PaymentSection from './PaymentSection';
 import ConfirmationSection from './ConfirmationSection';
 
 const BLANK_IDENTITY = { mode: 'existing', cadastroId: null, matchedCadastro: null, apelido: '', phone: '', social: '', agreedToTerms: false };
-const BLANK_PAYMENT = { method: '', amountPaid: '', receiptFile: null, receiptDriveLink: '', comments: '' };
+const BLANK_PAYMENT = { method: '', receiptFile: null, receiptDriveLink: '', comments: '' };
 
 function buildSubmissionItems(formItems, selections) {
   const rows = [];
@@ -33,6 +33,15 @@ function buildSubmissionItems(formItems, selections) {
   return rows;
 }
 
+// Buyer-confirmed total, not self-reported — computed from what they actually
+// selected (price × quantity per line), the same lines buildSubmissionItems saves.
+function computeTotal(formItems, selections) {
+  return buildSubmissionItems(formItems, selections).reduce((sum, row) => {
+    const item = formItems.find((i) => i.id === row.form_item_id);
+    return sum + (Number(item?.price) || 0) * row.quantity;
+  }, 0);
+}
+
 export default function PublicFormPage() {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading'); // 'loading' | 'unavailable' | 'ready'
@@ -46,6 +55,7 @@ export default function PublicFormPage() {
   const [joinedGroup, setJoinedGroup] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const total = useMemo(() => computeTotal(formItems, selections), [formItems, selections]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +108,7 @@ export default function PublicFormPage() {
         form_id: form.id,
         cadastro_id: cadastroId,
         payment_method: payment.method,
-        amount_paid: parseFloat(String(payment.amountPaid).replace(',', '.')) || 0,
+        amount_paid: total,
         receipt_file_url: receiptFileUrl,
         receipt_drive_link: payment.receiptDriveLink.trim() || null,
         comments: payment.comments.trim(),
@@ -146,7 +156,7 @@ export default function PublicFormPage() {
           <ItemsSection formItems={formItems} selections={selections} setSelections={setSelections} onNext={() => setStep('payment')} onBack={() => setStep('intro')} />
         )}
         {step === 'payment' && (
-          <PaymentSection form={form} payment={payment} setPayment={setPayment} onNext={() => setStep('confirmation')} onBack={() => setStep('items')} />
+          <PaymentSection form={form} payment={payment} setPayment={setPayment} total={total} onNext={() => setStep('confirmation')} onBack={() => setStep('items')} />
         )}
         {step === 'confirmation' && (
           <ConfirmationSection form={form} joinedGroup={joinedGroup} setJoinedGroup={setJoinedGroup} onSubmit={handleFinalSubmit} onBack={() => setStep('payment')} submitting={submitting} />

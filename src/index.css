@@ -421,6 +421,10 @@
     max-height:88vh; overflow-y:auto; box-shadow:0 34px 64px -20px rgba(40,35,44,0.35);
   }
   .modal h3{ font-family:'Outfit',sans-serif; margin:0 0 4px; font-size:19px; color:var(--pink-deep); }
+  /* Bare fallback so .hint looks right on any tag/nesting depth (div, span, deeply
+     nested) — the more specific rules below still win where they already applied,
+     this only fills in the cases neither one reaches. */
+  .hint{ font-size:12.5px; color:var(--ink-soft); margin:0 0 14px; }
   .modal p.hint{ font-size:12.5px; color:var(--ink-soft); margin:0 0 18px; }
   .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .form-grid .full{ grid-column:1 / -1; }
@@ -491,6 +495,17 @@
   .public-rules{
     background:var(--pink-softer); border:1px solid var(--pink-light); border-radius:14px;
     padding:14px 16px; margin:10px 0; font-size:13px; color:var(--ink); white-space:pre-wrap; line-height:1.6;
+  }
+  /* .item-card is normally a photo-thumb-beside-content row (see ItemCard); the
+     public item list instead wants a full-width photo on top of its content, so
+     it stays the same card skin (background/border/radius/shadow) with the row
+     turned into a column — that mismatch was why content used to render squeezed
+     beside a barely-visible photo instead of contained inside the card. */
+  .item-card.public-item-card{ flex-direction:column; }
+  .public-item-photo{ width:100%; max-height:240px; object-fit:contain; border-radius:14px; margin-bottom:10px; display:block; }
+  .public-item-photo-placeholder{
+    width:100%; height:200px; border-radius:14px; background:var(--pink-light);
+    display:flex; align-items:center; justify-content:center; font-size:44px; margin-bottom:10px;
   }
 
   footer{ text-align:center; padding:28px; font-size:12px; color:var(--ink-soft); }

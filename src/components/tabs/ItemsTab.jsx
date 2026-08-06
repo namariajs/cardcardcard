@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { supabase } from '../../lib/supabaseClient';
 import ItemCard from '../items/ItemCard';
 import ItemRow from '../items/ItemRow';
 import ItemModal from '../items/ItemModal';
@@ -12,7 +13,7 @@ import PhotoThumb from '../shared/PhotoThumb';
 import { deletePhoto } from '../../lib/storage';
 import { paymentFieldEffective, pendingItemOrders } from '../../lib/calc';
 import { findRegistryBySocial } from '../../lib/joiners';
-import { itemDisplayTitle, formatClaimDate } from '../../lib/format';
+import { itemDisplayTitle, formatClaimDate, formatDateOnly } from '../../lib/format';
 import { PAYMENT_FIELDS } from '../../lib/constants';
 
 // Sentinel joinerFilter value meaning "unclaimed items only" — distinct from any real
@@ -33,6 +34,8 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const [duplicatingItem, setDuplicatingItem] = useState(null);
   const [creatingSet, setCreatingSet] = useState(false);
   const [managingCategories, setManagingCategories] = useState(false);
+  const [openForms, setOpenForms] = useState([]);
+  const [openFormsLoaded, setOpenFormsLoaded] = useState(false);
 
   useEffect(() => {
     if (externalQuery) { setQuery(externalQuery); onExternalQueryConsumed?.(); }
@@ -41,6 +44,22 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   useEffect(() => {
     if (externalJoinerFilter) { setJoinerFilter(externalJoinerFilter); onExternalJoinerFilterConsumed?.(); }
   }, [externalJoinerFilter, onExternalJoinerFilterConsumed]);
+
+  useEffect(() => {
+    if (!unclaimedOnly) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('forms').select('id, title, subtitle, slug, deadline').eq('status', 'open').order('created_at', { ascending: false });
+      if (cancelled) return;
+      if (error) { console.error('ItemsTab: failed to load open forms', error); setOpenFormsLoaded(true); return; }
+      // A form past its own deadline is treated as closed by the public page itself
+      // (see PublicFormPage) — linking to it here would just land on "Encerrado".
+      const now = new Date();
+      setOpenForms((data || []).filter((f) => !f.deadline || new Date(f.deadline) >= now));
+      setOpenFormsLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [unclaimedOnly]);
 
   const joiners = useMemo(() => [...new Set(items.map((i) => i.joiner))].filter(Boolean).sort(), [items]);
   const caixas = useMemo(() => [...new Set(items.map((i) => i.caixa).filter((c) => c && c !== '-'))].sort(), [items]);
@@ -153,6 +172,29 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
               </div>
             );
           })}
+        </div>
+      )}
+
+      {unclaimedOnly && (
+        <div style={{ marginBottom: 24 }}>
+          <h3 className="menu-section-title" style={{ marginTop: 0 }}>🎫 CEGs Abertas</h3>
+          {!openFormsLoaded ? null : openForms.length === 0 ? (
+            <EmptyState title="Nenhuma CEG aberta no momento">Volte mais tarde para ver novas campanhas de claim/compra.</EmptyState>
+          ) : (
+            <div className="grid">
+              {openForms.map((f) => (
+                <a key={f.id} href={`/f/${f.slug}`} target="_blank" rel="noopener noreferrer" className="reg-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                  <div className="item-top">
+                    <div className="reg-name">{f.title}</div>
+                    <span className="badge pago">🟢 Aberto</span>
+                  </div>
+                  {f.subtitle && <div className="reg-row">{f.subtitle}</div>}
+                  {f.deadline && <div className="reg-row"><b>Prazo:</b> {formatDateOnly(f.deadline)}</div>}
+                  <div className="reg-row" style={{ color: 'var(--pink-dark)', fontWeight: 600 }}>Abrir formulário →</div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

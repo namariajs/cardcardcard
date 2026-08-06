@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { fmt } from '../../lib/format';
 
-export default function PaymentSection({ form, payment, setPayment, onNext, onBack }) {
+export default function PaymentSection({ form, payment, setPayment, total, onNext, onBack }) {
   const [error, setError] = useState('');
 
   function set(field, value) { setPayment({ ...payment, [field]: value }); }
@@ -13,7 +14,6 @@ export default function PaymentSection({ form, payment, setPayment, onNext, onBa
 
   function handleNext() {
     if (!payment.method) { setError('Escolha uma forma de pagamento.'); return; }
-    if (!payment.amountPaid || Number(String(payment.amountPaid).replace(',', '.')) <= 0) { setError('Informe o valor pago.'); return; }
     if (payment.method === 'pix' && !payment.receiptFile && !payment.receiptDriveLink.trim()) {
       setError('Envie o comprovante ou informe um link do Google Drive.');
       return;
@@ -25,17 +25,27 @@ export default function PaymentSection({ form, payment, setPayment, onNext, onBa
   return (
     <div className="form-section">
       <h3>Pagamento</h3>
-      {form.pix_key && <p className="hint">Chave Pix: <b className="mono">{form.pix_key}</b></p>}
+      {form.pix_key && (
+        <div className="lock-note">
+          <span>Chave Pix: <b className="mono" style={{ fontSize: 16 }}>{form.pix_key}</b></span>
+        </div>
+      )}
+
+      <div className="lock-note unlocked">
+        <span>Total a pagar: <b style={{ fontSize: 16 }}>{fmt(total)}</b></span>
+      </div>
 
       <div className="field full">
         <label>Forma de pagamento</label>
         <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textTransform: 'none', fontWeight: 500, fontSize: 13.5, color: 'var(--ink)' }}>
-            <input type="radio" name="payment_method" checked={payment.method === 'pix'} onChange={() => set('method', 'pix')} /> Pix
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <input type="radio" name="payment_method" checked={payment.method === 'pix'} onChange={() => set('method', 'pix')} />
+            <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Pix</span>
           </label>
           {form.allow_card_payment && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textTransform: 'none', fontWeight: 500, fontSize: 13.5, color: 'var(--ink)' }}>
-              <input type="radio" name="payment_method" checked={payment.method === 'cartao'} onChange={() => set('method', 'cartao')} /> Cartão de Crédito
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input type="radio" name="payment_method" checked={payment.method === 'cartao'} onChange={() => set('method', 'cartao')} />
+              <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Cartão de Crédito</span>
             </label>
           )}
         </div>
@@ -44,11 +54,6 @@ export default function PaymentSection({ form, payment, setPayment, onNext, onBa
       {payment.method === 'cartao' && form.card_contact_text && (
         <div className="lock-note">{form.card_contact_text}</div>
       )}
-
-      <div className="field">
-        <label>Valor pago (R$)</label>
-        <input value={payment.amountPaid} onChange={(e) => set('amountPaid', e.target.value)} />
-      </div>
 
       {payment.method === 'pix' && (
         <>

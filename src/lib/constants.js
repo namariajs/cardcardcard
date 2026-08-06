@@ -91,6 +91,9 @@ export const BLANK_ITEM = {
   prazoItem: null, prazoFreteInter: null, prazoTaxa: null,
   pagItemPaidAt: null, pagFreteInterPaidAt: null, pagTaxaPaidAt: null,
   statusCeg: '-', statusEnvio: '-', rastreio: '-', notes: '', caixa: '-', hasPhoto: false,
+  // Set true whenever an item is created with no photo attached, cleared the moment one
+  // is — lets the GOM spot items still needing a real photo without opening each one.
+  photoPending: false,
   category: '-', grupo: '-', membro: '-', tipo: 'CEG_INTER', unclaimed: false,
 };
 

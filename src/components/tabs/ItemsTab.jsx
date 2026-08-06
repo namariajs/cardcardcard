@@ -107,6 +107,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
     () => pendingItemOrders(itemOrders).sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt)),
     [itemOrders],
   );
+  const photoPendingCount = useMemo(() => items.filter((it) => it.photoPending).length, [items]);
 
   async function handleDelete(id) {
     const it = items.find((i) => i.id === id);
@@ -129,6 +130,11 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
         <StyledSelect value={grupoFilter} onChange={setGrupoFilter} options={grupoOptions} placeholder="Todos os grupos" />
         <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todas as CEGs" />
         <div className="spacer" />
+        {unlocked && !unclaimedOnly && photoPendingCount > 0 && (
+          <span className="badge atrasado" title="Itens criados sem foto — edite o item e adicione uma para limpar este aviso.">
+            📷 {photoPendingCount} {photoPendingCount === 1 ? 'foto pendente' : 'fotos pendentes'}
+          </span>
+        )}
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
         </button>

@@ -7,6 +7,9 @@ export function migrateItems(list) {
     if (LEGACY_STATUS_CEG[it.statusCeg]) it.statusCeg = LEGACY_STATUS_CEG[it.statusCeg];
     if (it.caixa === undefined) it.caixa = '-';
     if (it.hasPhoto === undefined) it.hasPhoto = false;
+    // Existing items predate this flag entirely — default to false (not flagged) rather
+    // than retroactively guessing which old items still "need" a photo.
+    if (it.photoPending === undefined) it.photoPending = false;
     if (it.category === undefined) it.category = '-';
     if (it.grupo === undefined) it.grupo = '-';
     if (it.membro === undefined) it.membro = '-';

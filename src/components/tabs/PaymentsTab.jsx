@@ -94,6 +94,7 @@ export default function PaymentsTab() {
             ceg: submission.forms?.title || '',
             notes: `Formulário: ${submission.forms?.title || ''}`,
             formSubmissionId: submission.id,
+            photoPending: true,
           });
         }
       });

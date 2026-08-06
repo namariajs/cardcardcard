@@ -81,6 +81,7 @@ export default function SetModal({ onClose }) {
         valorItem: price,
         joiner: hasJoiner ? resolved.value : '',
         unclaimed: !hasJoiner,
+        photoPending: true,
       });
     });
 

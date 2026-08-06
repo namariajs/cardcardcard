@@ -151,9 +151,15 @@ export default function ItemModal({ itemId, duplicateFrom, onClose }) {
       if (photoDraft.dataUrl) {
         await setItemPhoto(id, photoDraft.dataUrl);
         newItem.hasPhoto = true;
+        newItem.photoPending = false;
       } else if (photoDraft.remove) {
         await clearItemPhoto(id);
         newItem.hasPhoto = false;
+        newItem.photoPending = true;
+      } else if (!existing) {
+        // Brand-new item, no photo attached at all — flag it; editing an existing item
+        // without touching its photo leaves newItem.photoPending as whatever it already was.
+        newItem.photoPending = true;
       }
       upsertItem(newItem);
     }

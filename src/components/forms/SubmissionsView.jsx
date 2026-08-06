@@ -4,6 +4,7 @@ import { fmt, formatClaimDate } from '../../lib/format';
 import { toCsv, downloadCsv } from '../../lib/csv';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
+import ReceiptModal from '../shared/ReceiptModal';
 
 function itemsSummary(submission) {
   return (submission.form_submission_items || [])
@@ -21,6 +22,7 @@ export default function SubmissionsView({ form, onBack }) {
   const [loaded, setLoaded] = useState(false);
   const [formRow, setFormRow] = useState(form);
   const [deleting, setDeleting] = useState(false);
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
 
   async function load() {
     const { data, error } = await supabase
@@ -111,7 +113,7 @@ export default function SubmissionsView({ form, onBack }) {
                   <td style={{ maxWidth: 280 }}>{itemsSummary(s)}</td>
                   <td>{s.payment_method === 'pix' ? 'Pix' : 'Cartão'}<br />{fmt(s.amount_paid)}</td>
                   <td>
-                    {s.receipt_file_url && <a href={s.receipt_file_url} target="_blank" rel="noopener noreferrer">🖼️ Ver comprovante</a>}
+                    {s.receipt_file_url && <button className="btn btn-outline" onClick={() => setViewingReceiptUrl(s.receipt_file_url)}>📎 Ver comprovante</button>}
                     {s.receipt_drive_link && <><br /><a href={s.receipt_drive_link} target="_blank" rel="noopener noreferrer">🔗 Link Drive</a></>}
                     {!s.receipt_file_url && !s.receipt_drive_link && '—'}
                   </td>
@@ -125,6 +127,7 @@ export default function SubmissionsView({ form, onBack }) {
         </div>
       )}
 
+      {viewingReceiptUrl && <ReceiptModal imageUrl={viewingReceiptUrl} title="Comprovante" onClose={() => setViewingReceiptUrl(null)} />}
       {deleting && (
         <ConfirmModal
           title="Remover formulário"

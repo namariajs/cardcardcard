@@ -95,7 +95,7 @@ export default function MembersModal({ onClose }) {
         <div>
           {groupedMembers.map(([groupName, groupMembers]) => (
             <div key={groupName} style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.03em', margin: '10px 0 6px' }}>{groupName}</div>
+              <div className="stat-label" style={{ fontWeight: 700, letterSpacing: '0.03em', margin: '10px 0 6px' }}>{groupName}</div>
               {groupMembers.map((member) => (
                 <div className="claim-row" key={member.id}>
                   {editingId === member.id ? (

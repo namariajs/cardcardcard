@@ -57,7 +57,7 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 14 }}>
         <input type="checkbox" checked={identity.agreedToTerms} onChange={(e) => setIdentity({ ...identity, agreedToTerms: e.target.checked })} />
-        <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Li e concordo com as regras acima</span>
+        <span className="checkbox-label-text">Li e concordo com as regras acima</span>
       </label>
 
       <h3 style={{ marginTop: 22 }}>Quem é você?</h3>

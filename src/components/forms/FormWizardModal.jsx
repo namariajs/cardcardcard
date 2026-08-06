@@ -269,7 +269,7 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
             <div className="field"><label>Prazo final</label><input type="datetime-local" value={form.deadline} onChange={(e) => set('deadline', e.target.value)} /></div>
             <div className="field"><label>Chave Pix</label><input placeholder="Chave Pix" value={form.pixKey} onChange={(e) => set('pixKey', e.target.value)} /></div>
             <div className="field full">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontWeight: 500, fontSize: 13.5, color: 'var(--ink)' }}>
+              <label className="checkbox-label-text" style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.allowCardPayment} onChange={(e) => set('allowCardPayment', e.target.checked)} />
                 Aceitar pagamento por cartão de crédito
               </label>
@@ -334,7 +334,7 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
                         return (
                           <div key={groupName}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{groupName}</span>
+                              <span className="stat-label" style={{ fontWeight: 700, letterSpacing: '0.03em', margin: 0 }}>{groupName}</span>
                               <button type="button" className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 10.5 }}
                                 onClick={() => toggleGroup(it._tempKey, groupMembers, !allSelected)}>
                                 {allSelected ? 'Limpar' : 'Selecionar todos'}
@@ -342,7 +342,7 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                               {groupMembers.map((m) => (
-                                <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, textTransform: 'none', fontWeight: 500, color: 'var(--ink)', cursor: 'pointer' }}>
+                                <label key={m.id} className="checkbox-label-text" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
                                   <input type="checkbox" checked={it.optionMemberIds.includes(m.id)} onChange={() => toggleOption(it._tempKey, m.id)} />
                                   {m.name}
                                 </label>

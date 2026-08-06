@@ -40,12 +40,12 @@ export default function PaymentSection({ form, payment, setPayment, total, onNex
         <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
             <input type="radio" name="payment_method" checked={payment.method === 'pix'} onChange={() => set('method', 'pix')} />
-            <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Pix</span>
+            <span className="checkbox-label-text">Pix</span>
           </label>
           {form.allow_card_payment && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <input type="radio" name="payment_method" checked={payment.method === 'cartao'} onChange={() => set('method', 'cartao')} />
-              <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Cartão de Crédito</span>
+              <span className="checkbox-label-text">Cartão de Crédito</span>
             </label>
           )}
         </div>

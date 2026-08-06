@@ -21,7 +21,7 @@ export default function ConfirmationSection({ form, joinedGroup, setJoinedGroup,
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
         <input type="checkbox" checked={joinedGroup} onChange={(e) => setJoinedGroup(e.target.checked)} />
-        <span style={{ textTransform: 'none', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>Entrei no grupo</span>
+        <span className="checkbox-label-text">Entrei no grupo</span>
       </label>
 
       {error && <p className="hint" style={{ color: 'var(--pink-deep)' }}>{error}</p>}

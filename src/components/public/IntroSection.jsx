@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatPhoneBR, formatDateOnly } from '../../lib/format';
+import { formatPhoneBR, formatDateOnly, onlyDigits } from '../../lib/format';
 
 export default function IntroSection({ form, cadastroList, identity, setIdentity, onNext }) {
   const [search, setSearch] = useState('');
@@ -8,18 +8,30 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return [];
+    // Apelido is intentionally not searchable — nobody should be able to find someone
+    // else's cadastro by guessing a nickname. Phone is compared digit-only since it's
+    // stored/displayed formatted ("(11) 97951-9527") and the query usually isn't.
+    const qDigits = onlyDigits(search);
     return cadastroList
-      .filter((r) => [r.apelido, r.social, r.phone].join(' ').toLowerCase().includes(q))
+      .filter((r) => {
+        const socialMatch = String(r.social || '').toLowerCase().includes(q);
+        const phoneMatch = qDigits.length >= 4 && onlyDigits(r.phone).includes(qDigits);
+        return socialMatch || phoneMatch;
+      })
       .slice(0, 8);
   }, [search, cadastroList]);
 
   function pickMatch(match) {
-    setIdentity({ mode: 'existing', cadastroId: match.id, matchedCadastro: match, apelido: '', phone: '', social: '' });
+    // Spread the existing identity (not a fresh literal) so fields set earlier in this
+    // step — agreedToTerms above all — survive picking a match. A bare object literal
+    // here previously dropped agreedToTerms back to undefined, silently un-checking the
+    // terms checkbox from handleNext's point of view even though it still looked checked.
+    setIdentity({ ...identity, mode: 'existing', cadastroId: match.id, matchedCadastro: match, apelido: '', phone: '', social: '' });
     setSearch(match.apelido);
   }
 
   function switchToNew() {
-    setIdentity({ mode: 'new', cadastroId: null, matchedCadastro: null, apelido: '', phone: '', social: '' });
+    setIdentity({ ...identity, mode: 'new', cadastroId: null, matchedCadastro: null, apelido: '', phone: '', social: '' });
   }
 
   function handleNext() {
@@ -35,6 +47,9 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
 
   return (
     <div className="form-section">
+      {form.cover_image_url && (
+        <img src={form.cover_image_url} alt="" style={{ width: '100%', maxHeight: 260, objectFit: 'cover', borderRadius: 16, marginBottom: 14 }} />
+      )}
       <h3>{form.title}</h3>
       {form.subtitle && <p className="hint">{form.subtitle}</p>}
       {form.deadline && <p className="hint">⏰ Prazo final: <b>{formatDateOnly(form.deadline)}</b></p>}
@@ -49,7 +64,7 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
       {identity.mode === 'existing' ? (
         <>
           <div className="field full">
-            <label>Buscar cadastro (apelido, @ ou telefone)</label>
+            <label>Buscar cadastro (@ ou telefone)</label>
             <input value={search} onChange={(e) => { setSearch(e.target.value); setIdentity({ ...identity, cadastroId: null, matchedCadastro: null }); }} placeholder="Digite para buscar..." />
             {results.length > 0 && !identity.cadastroId && (
               <div className="autocomplete-dropdown" style={{ position: 'static', marginTop: 4 }}>
@@ -71,7 +86,7 @@ export default function IntroSection({ form, cadastroList, identity, setIdentity
             <div className="field"><label>WhatsApp (com DDD)</label><input value={identity.phone} onChange={(e) => setIdentity({ ...identity, phone: formatPhoneBR(e.target.value) })} placeholder="(11) 91234-5678" /></div>
             <div className="field"><label>@ Rede social</label><input value={identity.social} onChange={(e) => setIdentity({ ...identity, social: e.target.value })} placeholder="@usuario" /></div>
           </div>
-          <button type="button" className="btn btn-ghost" onClick={() => setIdentity({ mode: 'existing', cadastroId: null, matchedCadastro: null, apelido: '', phone: '', social: '' })}>Já tenho cadastro</button>
+          <button type="button" className="btn btn-ghost" onClick={() => setIdentity({ ...identity, mode: 'existing', cadastroId: null, matchedCadastro: null, apelido: '', phone: '', social: '' })}>Já tenho cadastro</button>
         </>
       )}
 

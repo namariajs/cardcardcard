@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabaseClient';
 import { genFormSlug } from '../../lib/format';
@@ -9,6 +9,7 @@ import MembersModal from './MembersModal';
 const BLANK_FORM = {
   title: '', subtitle: '', rulesText: '', deadline: '', pixKey: '',
   allowCardPayment: false, cardContactText: '', thankYouText: '', joinGroupLink: '',
+  coverImageUrl: null, coverImageFile: null,
 };
 
 const SELECTION_TYPE_LABELS = {
@@ -38,6 +39,16 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
   const [membersModalOpen, setMembersModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const groupedMembers = useMemo(() => {
+    const map = {};
+    members.forEach((m) => {
+      const group = m.group_name || 'Geral';
+      if (!map[group]) map[group] = [];
+      map[group].push(m);
+    });
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [members]);
+
   useEffect(() => {
     if (!isEditing) return;
     let cancelled = false;
@@ -50,7 +61,7 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
         deadline: formData.deadline ? formData.deadline.slice(0, 16) : '', pixKey: formData.pix_key || '',
         allowCardPayment: formData.allow_card_payment, cardContactText: formData.card_contact_text || '',
         thankYouText: formData.thank_you_text || '', joinGroupLink: formData.join_group_link || '',
-        slug: formData.slug,
+        slug: formData.slug, coverImageUrl: formData.cover_image_url || null, coverImageFile: null,
       });
       const { data: itemRows } = await supabase.from('form_items').select('*').eq('form_id', formId).order('order_index');
       const { data: optRows } = await supabase.from('form_item_options').select('*').in('form_item_id', (itemRows || []).map((i) => i.id));
@@ -95,6 +106,18 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
     }
   }
 
+  async function handleCoverImageChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const dataUrl = await resizeImageFile(file);
+      set('coverImageUrl', dataUrl);
+      set('coverImageFile', file);
+    } catch {
+      alert('Não foi possível carregar essa imagem.');
+    }
+  }
+
   function toggleOption(tempKey, memberId) {
     updateItem(tempKey, (it) => {
       const has = it.optionMemberIds.includes(memberId);
@@ -102,9 +125,22 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
     });
   }
 
+  function toggleGroup(tempKey, groupMembers, select) {
+    updateItem(tempKey, (it) => {
+      const ids = new Set(it.optionMemberIds);
+      groupMembers.forEach((m) => { if (select) ids.add(m.id); else ids.delete(m.id); });
+      return { optionMemberIds: [...ids] };
+    });
+  }
+
   async function saveInfoStep() {
     if (!form.title.trim()) { alert('Informe o título do formulário.'); return false; }
     setSaving(true);
+    let coverImageUrl = form.coverImageUrl;
+    if (form.coverImageFile) {
+      const uploaded = await uploadFormUpload(form.coverImageFile);
+      if (uploaded) coverImageUrl = uploaded;
+    }
     const row = {
       slug: form.slug,
       title: form.title.trim(),
@@ -116,12 +152,15 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
       card_contact_text: form.cardContactText.trim(),
       thank_you_text: form.thankYouText.trim(),
       join_group_link: form.joinGroupLink.trim(),
+      cover_image_url: coverImageUrl || null,
     };
     if (formRow?.id) row.id = formRow.id;
     const { data, error } = await supabase.from('forms').upsert(row).select().single();
     setSaving(false);
     if (error) { alert('Não foi possível salvar o formulário.'); console.error(error); return false; }
     setFormRow(data);
+    set('coverImageUrl', coverImageUrl);
+    set('coverImageFile', null);
     return true;
   }
 
@@ -213,6 +252,17 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
       {step === 'info' && (
         <>
           <div className="form-grid">
+            <div className="field full">
+              <label>Imagem de capa (opcional)</label>
+              <div className="photo-upload-row">
+                <div className="photo-preview" style={{ width: 100, aspectRatio: '16 / 9' }}>{form.coverImageUrl ? <img src={form.coverImageUrl} alt="" /> : <span>🖼️</span>}</div>
+                <div className="photo-upload-actions">
+                  <input type="file" id="coverImageInput" accept="image/*" style={{ display: 'none' }} onChange={handleCoverImageChange} />
+                  <button type="button" className="btn btn-ghost" onClick={() => document.getElementById('coverImageInput').click()}>📷 Escolher imagem</button>
+                  {form.coverImageUrl && <button type="button" className="btn btn-danger" onClick={() => { set('coverImageUrl', null); set('coverImageFile', null); }}>🗑 Remover</button>}
+                </div>
+              </div>
+            </div>
             <div className="field full"><label>Título</label><input placeholder="Ex: CEG Álbum + Photocard" value={form.title} onChange={(e) => set('title', e.target.value)} /></div>
             <div className="field full"><label>Subtítulo</label><input placeholder="Descrição curta (opcional)" value={form.subtitle} onChange={(e) => set('subtitle', e.target.value)} /></div>
             <div className="field full"><label>Regras</label><textarea rows={5} placeholder={'Ex:\n- Pagamento em até 48h\n- Sem reembolso após o prazo'} value={form.rulesText} onChange={(e) => set('rulesText', e.target.value)} /></div>
@@ -278,13 +328,29 @@ export default function FormWizardModal({ formId, onClose, onSaved }) {
                   {members.length === 0 ? (
                     <p className="hint">Nenhum membro cadastrado ainda — clique em "Gerenciar membros" acima.</p>
                   ) : (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {members.map((m) => (
-                        <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, textTransform: 'none', fontWeight: 500, color: 'var(--ink)', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={it.optionMemberIds.includes(m.id)} onChange={() => toggleOption(it._tempKey, m.id)} />
-                          {m.name}
-                        </label>
-                      ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {groupedMembers.map(([groupName, groupMembers]) => {
+                        const allSelected = groupMembers.every((m) => it.optionMemberIds.includes(m.id));
+                        return (
+                          <div key={groupName}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{groupName}</span>
+                              <button type="button" className="btn btn-ghost" style={{ padding: '3px 8px', fontSize: 10.5 }}
+                                onClick={() => toggleGroup(it._tempKey, groupMembers, !allSelected)}>
+                                {allSelected ? 'Limpar' : 'Selecionar todos'}
+                              </button>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                              {groupMembers.map((m) => (
+                                <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, textTransform: 'none', fontWeight: 500, color: 'var(--ink)', cursor: 'pointer' }}>
+                                  <input type="checkbox" checked={it.optionMemberIds.includes(m.id)} onChange={() => toggleOption(it._tempKey, m.id)} />
+                                  {m.name}
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

@@ -56,6 +56,24 @@ export default function MembersModal({ onClose }) {
     setEditingGroup('');
   }
 
+  // removeMember resolves to { error } (see useSupabaseTable) rather than throwing or
+  // silently succeeding — a member still referenced by some item's form_item_options
+  // (member_id has no ON DELETE clause, so Postgres rejects it as a foreign-key
+  // violation, code 23503) previously failed with no feedback at all: the optimistic
+  // local removal got rolled back a moment later, so the row just silently reappeared.
+  async function handleConfirmDelete() {
+    const id = deletingId;
+    setDeletingId(null);
+    const { error } = await removeMember(id);
+    if (!error) return;
+    if (error.code === '23503') {
+      alert('Este membro está em uso nas opções de um ou mais itens de formulário e por isso não pode ser removido. Remova-o das opções desses itens (na etapa 2 do formulário) antes de excluí-lo.');
+    } else {
+      alert('Não foi possível remover este membro. Verifique sua conexão e tente novamente.');
+      console.error('MembersModal: delete failed', error);
+    }
+  }
+
   return (
     <Modal onClose={onClose} maxWidth={520}>
       <h3>🧑‍🤝‍🧑 Membros</h3>
@@ -68,7 +86,7 @@ export default function MembersModal({ onClose }) {
         <div style={{ flex: 1, minWidth: 140 }}>
           <AutocompleteInput placeholder="Grupo (ex: SKZOO)" value={newGroup} onChange={setNewGroup} options={groupOptions} />
         </div>
-        <button type="button" className="btn btn-primary" onClick={handleAdd}>+ Adicionar</button>
+        <button type="button" className="btn btn-primary" style={{ flex: '0 0 auto' }} onClick={handleAdd}>+ Adicionar</button>
       </div>
 
       {members.length === 0 ? (
@@ -122,7 +140,7 @@ export default function MembersModal({ onClose }) {
           message="Tem certeza que deseja remover este membro da lista compartilhada?"
           confirmLabel="Remover"
           onCancel={() => setDeletingId(null)}
-          onConfirm={() => { removeMember(deletingId); setDeletingId(null); }}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </Modal>

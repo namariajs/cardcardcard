@@ -454,6 +454,12 @@
   .caixa-hint{ font-size:11px; margin-top:4px; color:var(--pink-deep); }
 
   .autocomplete-wrap{ position:relative; }
+  /* Unlike a <div>, an <input> doesn't auto-stretch to fill its block parent's width —
+     without this, AutocompleteInput's own input stayed at the browser's intrinsic
+     default width no matter how much space its flex/grid container actually allocated
+     it, so a row sized around that allocation (e.g. MembersModal's name/group/button
+     toolbar) could end up with less real space left than it looked like it should. */
+  .autocomplete-wrap input{ width:100%; }
   .autocomplete-dropdown{
     position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:20;
     background:#fff; border:1px solid var(--border); border-radius:14px;

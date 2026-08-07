@@ -22,7 +22,8 @@ export default function SubmissionsView({ form, onBack }) {
   const [loaded, setLoaded] = useState(false);
   const [formRow, setFormRow] = useState(form);
   const [deleting, setDeleting] = useState(false);
-  const [viewingReceiptUrl, setViewingReceiptUrl] = useState(null);
+  const [deletingSubmissionId, setDeletingSubmissionId] = useState(null);
+  const [viewingImage, setViewingImage] = useState(null); // { url, title }
 
   async function load() {
     const { data, error } = await supabase
@@ -32,7 +33,7 @@ export default function SubmissionsView({ form, onBack }) {
         cadastro:cadastro_id ( apelido, nome_completo, phone, social ),
         form_submission_items (
           quantity,
-          form_items ( name ),
+          form_items ( name, photo_url ),
           form_item_options ( member_id, members ( name ) )
         )
       `)
@@ -56,6 +57,30 @@ export default function SubmissionsView({ form, onBack }) {
     const { error } = await supabase.from('forms').delete().eq('id', formRow.id);
     if (error) { alert('Não foi possível remover este formulário.'); console.error(error); return; }
     onBack();
+  }
+
+  // Toggling this never touches processing_status (the separate Pagamentos
+  // approve/reject pipeline) — it's just a manual "GOM has dealt with this" note.
+  async function toggleProcessed(submission) {
+    const { data, error } = await supabase
+      .from('form_submissions')
+      .update({ manually_processed: !submission.manually_processed })
+      .eq('id', submission.id)
+      .select()
+      .single();
+    if (error) { alert('Não foi possível atualizar esta resposta.'); console.error(error); return; }
+    setSubmissions((prev) => prev.map((s) => (s.id === submission.id ? { ...s, manually_processed: data.manually_processed } : s)));
+  }
+
+  // Only ever removes the form_submissions row (and its form_submission_items, via
+  // cascade) — an item already created from it via Pagamentos approval lives entirely
+  // in the separate items collection with no link back that this delete could follow,
+  // so it's structurally impossible for this to touch one.
+  async function handleDeleteSubmission() {
+    const { error } = await supabase.from('form_submissions').delete().eq('id', deletingSubmissionId);
+    if (error) { alert('Não foi possível remover esta resposta.'); console.error(error); setDeletingSubmissionId(null); return; }
+    setSubmissions((prev) => prev.filter((s) => s.id !== deletingSubmissionId));
+    setDeletingSubmissionId(null);
   }
 
   function handleExport() {
@@ -101,25 +126,55 @@ export default function SubmissionsView({ form, onBack }) {
                 <th>Comentários</th>
                 <th>Grupo</th>
                 <th>Enviado em</th>
+                <th>Processado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {submissions.map((s) => (
-                <tr key={s.id}>
+                <tr key={s.id} style={{ opacity: s.manually_processed ? 0.55 : 1 }}>
                   <td>
                     <b>{s.cadastro?.apelido || '—'}</b>
                     <br /><span style={{ fontSize: 11.5, color: 'var(--ink-soft)' }}>{s.cadastro?.phone}{s.cadastro?.social ? ' — ' + s.cadastro.social : ''}</span>
                   </td>
-                  <td style={{ maxWidth: 280 }}>{itemsSummary(s)}</td>
+                  <td style={{ maxWidth: 280 }}>
+                    {(s.form_submission_items || []).map((si, idx) => {
+                      const name = si.form_items?.name || '—';
+                      const optionName = si.form_item_options?.members?.name;
+                      const label = optionName ? `${name} (${optionName})` : name;
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          {si.form_items?.photo_url ? (
+                            <img
+                              src={si.form_items.photo_url} alt="" className="table-thumb"
+                              onClick={() => setViewingImage({ url: si.form_items.photo_url, title: label })}
+                            />
+                          ) : (
+                            <span className="table-thumb table-thumb-placeholder">🖼️</span>
+                          )}
+                          <span>{label} x{si.quantity || 1}</span>
+                        </div>
+                      );
+                    })}
+                  </td>
                   <td>{s.payment_method === 'pix' ? 'Pix' : 'Cartão'}<br />{fmt(s.amount_paid)}</td>
                   <td>
-                    {s.receipt_file_url && <button className="btn btn-outline" onClick={() => setViewingReceiptUrl(s.receipt_file_url)}>📎 Ver comprovante</button>}
+                    {s.receipt_file_url && <button className="btn btn-outline" onClick={() => setViewingImage({ url: s.receipt_file_url, title: 'Comprovante' })}>📎 Ver comprovante</button>}
                     {s.receipt_drive_link && <><br /><a href={s.receipt_drive_link} target="_blank" rel="noopener noreferrer">🔗 Link Drive</a></>}
                     {!s.receipt_file_url && !s.receipt_drive_link && '—'}
                   </td>
                   <td style={{ maxWidth: 200 }}>{s.comments || '—'}</td>
                   <td>{s.joined_group ? '✓' : '—'}</td>
                   <td style={{ fontSize: 11.5 }}>{formatClaimDate(s.created_at)}</td>
+                  <td>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={!!s.manually_processed} onChange={() => toggleProcessed(s)} />
+                      {s.manually_processed && <span className="checkbox-label-text" style={{ color: '#2F5C40', fontWeight: 700 }}>✓</span>}
+                    </label>
+                  </td>
+                  <td>
+                    <button className="btn btn-danger" style={{ padding: '5px 8px' }} onClick={() => setDeletingSubmissionId(s.id)}>🗑</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -127,7 +182,7 @@ export default function SubmissionsView({ form, onBack }) {
         </div>
       )}
 
-      {viewingReceiptUrl && <ReceiptModal imageUrl={viewingReceiptUrl} title="Comprovante" onClose={() => setViewingReceiptUrl(null)} />}
+      {viewingImage && <ReceiptModal imageUrl={viewingImage.url} title={viewingImage.title} onClose={() => setViewingImage(null)} />}
       {deleting && (
         <ConfirmModal
           title="Remover formulário"
@@ -135,6 +190,15 @@ export default function SubmissionsView({ form, onBack }) {
           confirmLabel="Remover"
           onCancel={() => setDeleting(false)}
           onConfirm={handleDelete}
+        />
+      )}
+      {deletingSubmissionId && (
+        <ConfirmModal
+          title="Remover resposta"
+          message="Isto vai remover apenas o registro da resposta — itens já criados a partir dela (via aprovação em Pagamentos) não serão afetados. Essa ação não pode ser desfeita."
+          confirmLabel="Remover"
+          onCancel={() => setDeletingSubmissionId(null)}
+          onConfirm={handleDeleteSubmission}
         />
       )}
     </>

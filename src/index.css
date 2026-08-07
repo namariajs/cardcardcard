@@ -135,6 +135,10 @@
   input:focus, select:focus, textarea:focus, button:focus-visible{
     outline:2px solid var(--pink); outline-offset:1px;
   }
+  /* Checkboxes/radios were the one native-browser-default element left in the app —
+     every other control carries the pink identity, this brings their check/fill color
+     in line with it too (affects every checkbox/radio app-wide, not just one instance). */
+  input[type="checkbox"], input[type="radio"]{ accent-color:var(--pink); cursor:pointer; }
 
   .btn{
     font-family:'Inter',sans-serif; font-weight:600; font-size:13px;

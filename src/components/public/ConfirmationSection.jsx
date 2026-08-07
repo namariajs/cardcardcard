@@ -14,7 +14,7 @@ export default function ConfirmationSection({ form, joinedGroup, setJoinedGroup,
       <h3>Quase lá!</h3>
 
       {form.join_group_link && (
-        <a href={form.join_group_link} target="_blank" rel="noopener noreferrer" className="btn btn-sage" style={{ width: '100%', justifyContent: 'center', marginBottom: 16 }}>
+        <a href={form.join_group_link} target="_blank" rel="noopener noreferrer" className="btn btn-sage" style={{ width: '100%', justifyContent: 'center', marginBottom: 24 }}>
           🔗 Entrar no grupo
         </a>
       )}

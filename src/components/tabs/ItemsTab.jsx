@@ -5,7 +5,6 @@ import ItemCard from '../items/ItemCard';
 import ItemRow from '../items/ItemRow';
 import ItemModal from '../items/ItemModal';
 import SetModal from '../items/SetModal';
-import CategoriesModal from '../items/CategoriesModal';
 import ConfirmModal from '../shared/ConfirmModal';
 import EmptyState from '../shared/EmptyState';
 import StyledSelect from '../shared/StyledSelect';
@@ -33,7 +32,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const [deletingId, setDeletingId] = useState(null);
   const [duplicatingItem, setDuplicatingItem] = useState(null);
   const [creatingSet, setCreatingSet] = useState(false);
-  const [managingCategories, setManagingCategories] = useState(false);
+  const [photoPendingFilter, setPhotoPendingFilter] = useState(false);
   const [openForms, setOpenForms] = useState([]);
   const [openFormsLoaded, setOpenFormsLoaded] = useState(false);
 
@@ -99,9 +98,10 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
       const matchS = !statusFilter || PAYMENT_FIELDS.some((f) => paymentFieldEffective(it, f).status === statusFilter);
       const matchG = !grupoFilter || it.grupo === grupoFilter;
       const matchCeg = !cegFilter || it.ceg === cegFilter;
-      return matchQ && matchJ && matchC && matchS && matchG && matchCeg;
+      const matchPhotoPending = !photoPendingFilter || it.photoPending;
+      return matchQ && matchJ && matchC && matchS && matchG && matchCeg && matchPhotoPending;
     });
-  }, [items, query, joinerFilter, caixaFilter, statusFilter, grupoFilter, cegFilter]);
+  }, [items, query, joinerFilter, caixaFilter, statusFilter, grupoFilter, cegFilter, photoPendingFilter]);
 
   const pendingOrders = useMemo(
     () => pendingItemOrders(itemOrders).sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt)),
@@ -130,17 +130,21 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
         <StyledSelect value={grupoFilter} onChange={setGrupoFilter} options={grupoOptions} placeholder="Todos os grupos" />
         <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todas as CEGs" />
         <div className="spacer" />
-        {unlocked && !unclaimedOnly && photoPendingCount > 0 && (
-          <span className="badge atrasado" title="Itens criados sem foto — edite o item e adicione uma para limpar este aviso.">
+        {unlocked && !unclaimedOnly && (photoPendingCount > 0 || photoPendingFilter) && (
+          <button
+            type="button"
+            className={`btn ${photoPendingFilter ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => setPhotoPendingFilter((v) => !v)}
+            title="Filtrar itens que ainda precisam de foto"
+          >
             📷 {photoPendingCount} {photoPendingCount === 1 ? 'foto pendente' : 'fotos pendentes'}
-          </span>
+          </button>
         )}
         <button className="btn btn-ghost" onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}>
           {viewMode === 'cards' ? '📋 Ver em lista' : '🗂 Ver em cards'}
         </button>
         {unlocked && !unclaimedOnly && (
           <>
-            <button className="btn btn-ghost" onClick={() => setManagingCategories(true)}>🏷️ Categorias</button>
             <button className="btn btn-ghost" onClick={() => setCreatingSet(true)}>🗂️ Novo Set</button>
             <button className="btn btn-primary" onClick={() => setEditingId(null)}>+ Adicionar item</button>
           </>
@@ -196,7 +200,9 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
                   </div>
                   {f.subtitle && <div className="reg-row">{f.subtitle}</div>}
                   {f.deadline && <div className="reg-row"><b>Prazo:</b> {formatDateOnly(f.deadline)}</div>}
-                  <div className="reg-row" style={{ color: 'var(--pink-dark)', fontWeight: 600 }}>Abrir formulário →</div>
+                  <div className="card-actions">
+                    <span className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Abrir formulário →</span>
+                  </div>
                 </a>
               ))}
             </div>
@@ -230,7 +236,6 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}
       {duplicatingItem && <ItemModal itemId={null} duplicateFrom={duplicatingItem} onClose={() => setDuplicatingItem(null)} />}
       {creatingSet && <SetModal onClose={() => setCreatingSet(false)} />}
-      {managingCategories && <CategoriesModal onClose={() => setManagingCategories(false)} />}
       {deletingId && (
         <ConfirmModal
           title="Remover item"

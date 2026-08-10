@@ -13,14 +13,14 @@ import { deletePhoto } from '../../lib/storage';
 import { paymentFieldEffective, pendingItemOrders } from '../../lib/calc';
 import { findRegistryBySocial } from '../../lib/joiners';
 import { itemDisplayTitle, formatClaimDate, formatDateOnly } from '../../lib/format';
-import { PAYMENT_FIELDS } from '../../lib/constants';
+import { PAYMENT_FIELDS, STATUS_CEG } from '../../lib/constants';
 
 // Sentinel joinerFilter value meaning "unclaimed items only" — distinct from any real
 // handle since normHandle always prefixes those with '@'.
 const UNCLAIMED_FILTER = '__unclaimed__';
 
 export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExternalQueryConsumed, externalJoinerFilter, onExternalJoinerFilterConsumed }) {
-  const { items, unlocked, removeItem, registry, itemOrders, approveItemOrder, denyItemOrder } = useApp();
+  const { items, unlocked, removeItem, upsertItem, registry, itemOrders, approveItemOrder, denyItemOrder } = useApp();
   const [query, setQuery] = useState('');
   const [joinerFilter, setJoinerFilter] = useState(unclaimedOnly ? UNCLAIMED_FILTER : '');
   const [caixaFilter, setCaixaFilter] = useState('');
@@ -35,6 +35,8 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   const [photoPendingFilter, setPhotoPendingFilter] = useState(false);
   const [openForms, setOpenForms] = useState([]);
   const [openFormsLoaded, setOpenFormsLoaded] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkStatusCeg, setBulkStatusCeg] = useState('');
 
   useEffect(() => {
     if (externalQuery) { setQuery(externalQuery); onExternalQueryConsumed?.(); }
@@ -109,10 +111,38 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
   );
   const photoPendingCount = useMemo(() => items.filter((it) => it.photoPending).length, [items]);
 
+  const statusCegOptions = useMemo(() => Object.entries(STATUS_CEG).map(([k, label]) => ({ value: k, label })), []);
+  const allFilteredSelected = filtered.length > 0 && filtered.every((it) => selected.has(it.id));
+
   async function handleDelete(id) {
     const it = items.find((i) => i.id === id);
     removeItem(id);
     if (it?.hasPhoto) await deletePhoto(id);
+  }
+
+  function toggleSelect(id) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelected((prev) => {
+      if (filtered.every((it) => prev.has(it.id))) return new Set();
+      return new Set(filtered.map((it) => it.id));
+    });
+  }
+
+  function handleBulkStatusChange() {
+    if (!bulkStatusCeg || selected.size === 0) return;
+    selected.forEach((id) => {
+      const it = items.find((i) => i.id === id);
+      if (it) upsertItem({ ...it, statusCeg: bulkStatusCeg });
+    });
+    setSelected(new Set());
+    setBulkStatusCeg('');
   }
 
   return (
@@ -221,16 +251,30 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
           ))}
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table>
-            <thead>
-              <tr><th>Item</th><th>Joiner</th><th>CEG</th><th>Item</th><th>Frete Inter</th><th>Taxa</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody>
-              {filtered.map((it) => <ItemRow key={it.id} item={it} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />)}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {unlocked && selected.size > 0 && (
+            <div className="panel-toolbar">
+              <span>{selected.size} {selected.size === 1 ? 'item selecionado' : 'itens selecionados'}</span>
+              <StyledSelect value={bulkStatusCeg} onChange={setBulkStatusCeg} options={statusCegOptions} placeholder="Status CEG..." />
+              <button className="btn btn-primary" disabled={!bulkStatusCeg} onClick={handleBulkStatusChange}>Aplicar</button>
+            </div>
+          )}
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  {unlocked && <th><input type="checkbox" checked={allFilteredSelected} onChange={toggleSelectAll} /></th>}
+                  <th>Item</th><th>Joiner</th><th>CEG</th><th>Item</th><th>Frete Inter</th><th>Taxa</th><th>Status</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((it) => (
+                  <ItemRow key={it.id} item={it} selected={selected.has(it.id)} onToggleSelect={toggleSelect} onEdit={setEditingId} onDelete={setDeletingId} onDuplicate={setDuplicatingItem} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {editingId !== undefined && <ItemModal itemId={editingId} onClose={() => setEditingId(undefined)} />}

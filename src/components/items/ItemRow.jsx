@@ -2,10 +2,13 @@ import { useApp } from '../../context/AppContext';
 import { itemDisplayTitle, statusLabel, isInterItem } from '../../lib/format';
 import PaymentFieldCell from '../shared/PaymentFieldCell';
 
-export default function ItemRow({ item, onEdit, onDelete, onDuplicate }) {
+export default function ItemRow({ item, selected, onToggleSelect, onEdit, onDelete, onDuplicate }) {
   const { unlocked } = useApp();
   return (
     <tr>
+      {unlocked && (
+        <td><input type="checkbox" checked={selected} onChange={() => onToggleSelect(item.id)} /></td>
+      )}
       <td>
         <b>{itemDisplayTitle(item)}</b>
         {unlocked && <><br /><span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-soft)' }}>{item.id}</span></>}

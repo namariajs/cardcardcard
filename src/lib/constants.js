@@ -14,7 +14,7 @@ export const GOM_ONLY_TABS = ['registry', 'arquivo', 'joiners', 'inter', 'formul
 export const STATUS_CEG = {
   '-': '—',
   COLETANDO_CLAIMS: 'Coletando claims',
-  ITENS_GARANTIDOS: 'Itens garantidos',
+  ITENS_GARANTIDOS: 'Garantido',
   NA_WAREHOUSE: 'Na warehouse',
   CAMINHO_BRASIL: 'A caminho Brasil',
   TAXADA_RF: 'Taxada Receita Federal',

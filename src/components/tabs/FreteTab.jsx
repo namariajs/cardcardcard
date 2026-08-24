@@ -97,8 +97,8 @@ export default function FreteTab() {
         </>
       )}
 
-      <div className="panel-intro">
-        <h3>ℹ️ Informações sobre o envio nacional</h3>
+      <div className="menu-card" style={{ marginBottom: 16 }}>
+        <h4>ℹ️ Informações sobre o envio nacional</h4>
         <ul>
           <li>O valor do seu frete será calculado em até 2 semanas após eu liberar a solicitação.</li>
           <li>Envios são calculados por superfrete e enviados por correios (Mini Envios, Sedex ou PAC). Não consigo realizar envios por transportadora.</li>

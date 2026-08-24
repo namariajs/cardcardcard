@@ -99,7 +99,13 @@ export default function FreteTab() {
 
       <div className="panel-intro">
         <h3>ℹ️ Informações sobre o envio nacional</h3>
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        <ul>
+          <li>O valor do seu frete será calculado em até 2 semanas após eu liberar a solicitação.</li>
+          <li>Envios são calculados por superfrete e enviados por correios (Mini Envios, Sedex ou PAC). Não consigo realizar envios por transportadora.</li>
+          <li>Envios nacionais são lentos, com prazo de até 30 dias após o pagamento.</li>
+          <li>Para itens grandes, preciso que os itens cheguem até a minha casa para que eu possa solicitar uma caixa específica para o envio. Quando necessário, esse processo demora cerca de uma a duas semanas.</li>
+          <li>Caso eu tenha algum imprevisto e não consiga cumprir com os prazos acima, tentarei avisar com antecedência!</li>
+        </ul>
       </div>
 
       <div className="panel-intro">

@@ -60,7 +60,7 @@ export default function MyPanelTab() {
     <>
       <div className="panel-intro">
         <h3>👤 Painel do Joiner</h3>
-        <p>Digite seu @ ou telefone para ver todos os seus itens, status e pagamentos em um só lugar.</p>
+        <p>Digite seu @ ou telefone para ver todos os seus itens, status e pagamentos.</p>
         <div className="panel-lookup-row">
           <input type="text" placeholder="@seuusuario ou telefone (ex: 11912345678)" value={inputDraft}
             onChange={(e) => setInputDraft(e.target.value)}

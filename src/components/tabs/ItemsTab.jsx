@@ -219,7 +219,7 @@ export default function ItemsTab({ unclaimedOnly = false, externalQuery, onExter
         <div style={{ marginBottom: 24 }}>
           <h3 className="menu-section-title" style={{ marginTop: 0 }}>🎫 CEGs Abertas</h3>
           {!openFormsLoaded ? null : openForms.length === 0 ? (
-            <EmptyState className="empty-compact" title="Nenhuma CEG aberta no momento">Volte mais tarde para ver novas campanhas de claim/compra.</EmptyState>
+            <EmptyState className="empty-compact" title="Nenhuma CEG aberta no momento">Volte mais tarde para verificar novos formulários de compra.</EmptyState>
           ) : (
             <div className="grid">
               {openForms.map((f) => (

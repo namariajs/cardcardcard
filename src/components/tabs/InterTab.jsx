@@ -6,6 +6,7 @@ import InterBoxCard from '../inter/InterBoxCard';
 import InterItemDetailModal from '../inter/InterItemDetailModal';
 import ItemModal from '../items/ItemModal';
 import EmptyState from '../shared/EmptyState';
+import StyledSelect from '../shared/StyledSelect';
 
 export default function InterTab() {
   const { unlocked, items, interBoxes, createInterBox, updateInterBox } = useApp();
@@ -13,8 +14,24 @@ export default function InterTab() {
   const [assignTarget, setAssignTarget] = useState('');
   const [detailItemId, setDetailItemId] = useState(null);
   const [editingItemId, setEditingItemId] = useState(undefined);
+  const [cegFilter, setCegFilter] = useState('');
+  const [itemNameFilter, setItemNameFilter] = useState('');
 
   const unassigned = useMemo(() => items.filter((it) => !interBoxForItem(interBoxes, it.id)), [items, interBoxes]);
+
+  const cegOptions = useMemo(() => [
+    { value: '', label: 'Todas as CEGs' },
+    ...[...new Set(unassigned.map((it) => it.ceg).filter((c) => c && c.trim()))].sort().map((c) => ({ value: c, label: c })),
+  ], [unassigned]);
+  const itemNameOptions = useMemo(() => [
+    { value: '', label: 'Todos os Set/Item' },
+    ...[...new Set(unassigned.map((it) => it.itemName).filter((n) => n && n.trim()))].sort().map((n) => ({ value: n, label: n })),
+  ], [unassigned]);
+
+  const filteredUnassigned = useMemo(
+    () => unassigned.filter((it) => (!cegFilter || it.ceg === cegFilter) && (!itemNameFilter || it.itemName === itemNameFilter)),
+    [unassigned, cegFilter, itemNameFilter],
+  );
 
   if (!unlocked) {
     return <EmptyState title="Modo GOM necessário">Você não tem acesso a essa página.</EmptyState>;
@@ -58,8 +75,15 @@ export default function InterTab() {
           <div className="empty" style={{ marginTop: 10 }}><b>Tudo associado! 🎉</b>Todos os itens já estão em alguma caixa internacional.</div>
         ) : (
           <>
+            <div className="panel-toolbar" style={{ marginTop: 10, marginBottom: 0 }}>
+              <StyledSelect value={cegFilter} onChange={setCegFilter} options={cegOptions} placeholder="Todas as CEGs" />
+              <StyledSelect value={itemNameFilter} onChange={setItemNameFilter} options={itemNameOptions} placeholder="Todos os Set/Item" />
+            </div>
+            {filteredUnassigned.length === 0 ? (
+              <div className="empty" style={{ marginTop: 10 }}><b>Nenhum item encontrado</b>Ajuste os filtros para ver outros itens.</div>
+            ) : (
             <div className="registry-grid" style={{ marginTop: 10 }}>
-              {unassigned.map((it) => (
+              {filteredUnassigned.map((it) => (
                 <label className="reg-card" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }} key={it.id}>
                   <input type="checkbox" style={{ marginTop: 3 }} checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} />
                   <div>
@@ -70,6 +94,7 @@ export default function InterTab() {
                 </label>
               ))}
             </div>
+            )}
             <div className="panel-toolbar" style={{ marginTop: 14, marginBottom: 0 }}>
               <select value={assignTarget} onChange={(e) => setAssignTarget(e.target.value)}>
                 <option value="">+ Nova caixa internacional</option>
